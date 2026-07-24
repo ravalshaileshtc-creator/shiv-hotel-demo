@@ -45,7 +45,7 @@ export interface Order {
   tax: number;
   discount: number;
   grandTotal: number;
-  status: 'pending' | 'preparing' | 'ready' | 'served' | 'billed';
+  status: 'PLACED' | 'ACCEPTED_BY_KITCHEN' | 'PREPARING' | 'READY' | 'BILLED' | 'COMPLETED' | 'REJECTED';
   timestamp: number;
   customerPhone?: string;
   pointsEarned?: number;

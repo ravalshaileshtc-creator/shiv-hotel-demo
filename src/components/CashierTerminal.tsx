@@ -45,8 +45,10 @@ export default function CashierTerminal() {
 
   // Find active orders for selected table
   const activeOrdersForTable = selectedTableId 
-    ? orders.filter(o => o.tableId === selectedTableId && o.status !== 'billed')
+    ? orders.filter(o => o.tableId === selectedTableId && o.status !== 'COMPLETED' && o.status !== 'REJECTED')
     : [];
+
+  const hasUnreadyOrders = activeOrdersForTable.some(o => o.status === 'PLACED' || o.status === 'ACCEPTED_BY_KITCHEN' || o.status === 'PREPARING');
 
   const selectedTable = tables.find(t => t.id === selectedTableId);
 
@@ -83,12 +85,12 @@ export default function CashierTerminal() {
   const handleSettleBill = async () => {
     if (!selectedTableId || activeOrdersForTable.length === 0) return;
 
-    // 1. Mark orders as billed
+    // 1. Mark orders as COMPLETED
     const updatedOrders = orders.map(ord => {
-      if (ord.tableId === selectedTableId && ord.status !== 'billed') {
+      if (ord.tableId === selectedTableId && ord.status !== 'COMPLETED') {
         return { 
           ...ord, 
-          status: 'billed',
+          status: 'COMPLETED',
           discount: ord.discount + (cashDiscount / activeOrdersForTable.length), // distribute cash discount
           grandTotal: Math.max(0, ord.subtotal + ord.tax - (ord.discount + (cashDiscount / activeOrdersForTable.length)))
         } as Order;
@@ -116,6 +118,21 @@ export default function CashierTerminal() {
     });
   };
 
+  // Generate bill & transition status to BILLED
+  const handleGenerateBill = async () => {
+    if (!selectedTableId || activeOrdersForTable.length === 0) return;
+
+    const updatedOrders = orders.map(ord => {
+      if (ord.tableId === selectedTableId && ord.status === 'READY') {
+        return { ...ord, status: 'BILLED' } as Order;
+      }
+      return ord;
+    });
+
+    await updateState({ orders: updatedOrders });
+    handlePrintReceipt();
+  };
+
   // Trigger print receipt
   const handlePrintReceipt = () => {
     window.print();
@@ -123,20 +140,20 @@ export default function CashierTerminal() {
 
   // Helper to check table's occupancy status
   const getTableCardStyle = (table: Table) => {
-    const activeOrd = orders.find(o => o.tableId === table.id && o.status !== 'billed');
+    const activeOrd = orders.find(o => o.tableId === table.id && o.status !== 'COMPLETED' && o.status !== 'REJECTED');
     
     if (!activeOrd) {
       return 'border-green-100 bg-white hover:border-green-300 shadow-sm';
     }
     
     // Check status of active order to show alert level
-    if (activeOrd.status === 'ready') {
+    if (activeOrd.status === 'READY' || activeOrd.status === 'BILLED') {
       return 'border-green-500 bg-green-50/50 hover:bg-green-50 hover:border-green-600 shadow-md shadow-green-100 pulse-ready';
     }
-    if (activeOrd.status === 'served') {
-      return 'border-red-500 bg-red-50/40 hover:bg-red-50 hover:border-red-600 shadow-md shadow-red-100 pulse-pending';
+    if (activeOrd.status === 'PLACED' || activeOrd.status === 'ACCEPTED_BY_KITCHEN' || activeOrd.status === 'PREPARING') {
+      return 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-400 shadow-sm';
     }
-    return 'border-amber-200 bg-amber-50/30 hover:bg-amber-50 hover:border-amber-400 shadow-sm';
+    return 'border-red-100 bg-red-50/30 hover:border-red-200 shadow-sm';
   };
 
   return (
@@ -169,7 +186,7 @@ export default function CashierTerminal() {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {tables.map(table => {
-              const activeOrd = orders.find(o => o.tableId === table.id && o.status !== 'billed');
+              const activeOrd = orders.find(o => o.tableId === table.id && o.status !== 'COMPLETED' && o.status !== 'REJECTED');
               const isSelected = selectedTableId === table.id;
 
               return (
@@ -333,11 +350,24 @@ export default function CashierTerminal() {
                     </div>
                   </div>
 
+                  {hasUnreadyOrders && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3 flex items-start gap-2.5">
+                      <span className="text-amber-500 shrink-0 mt-0.5">⚠️</span>
+                      <div>
+                        <p className="text-xs font-bold text-amber-800">Kitchen Active</p>
+                        <p className="text-[10px] text-amber-700 font-medium">Orders are still being prepared. Settle payment only after kitchen marks them as Ready.</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Action buttons */}
                   <div className="flex gap-2">
                     <button
-                      onClick={handlePrintReceipt}
-                      className="p-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center cursor-pointer shrink-0"
+                      onClick={handleGenerateBill}
+                      className={`p-3 rounded-xl transition-colors flex items-center justify-center cursor-pointer shrink-0 ${
+                        hasUnreadyOrders ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                      disabled={hasUnreadyOrders}
                       title="Print Thermal Ticket"
                     >
                       <Printer className="w-5 h-5" />
@@ -345,7 +375,12 @@ export default function CashierTerminal() {
                     
                     <button
                       onClick={handleSettleBill}
-                      className="grow bg-primary-500 hover:bg-primary-600 text-white font-bold py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary-500/10"
+                      disabled={hasUnreadyOrders}
+                      className={`grow font-bold py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                        hasUnreadyOrders 
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none' 
+                          : 'bg-primary-500 hover:bg-primary-600 text-white shadow-md shadow-primary-500/10'
+                      }`}
                     >
                       <Check className="w-4 h-4" />
                       Settle & Vacant Table

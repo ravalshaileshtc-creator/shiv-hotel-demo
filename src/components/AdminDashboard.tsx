@@ -19,13 +19,17 @@ import {
 } from 'lucide-react';
 import QRCode from 'qrcode';
 
-export default function AdminDashboard() {
+interface AdminDashboardProps {
+  role?: 'owner' | 'super_admin';
+}
+
+export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardProps) {
   // DB States
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [settings, setSettings] = useState<Settings>({
-    restaurantName: 'Shiv Resto',
+    restaurantName: 'Lumière Dining',
     upiId: 'restaurant@upi',
     address: '',
     logoUrl: '',
@@ -96,7 +100,7 @@ export default function AdminDashboard() {
   }, [tables]); // refires checks on updates
 
   // Analytics calculations
-  const settledOrders = orders.filter(o => o.status === 'billed');
+  const settledOrders = orders.filter(o => o.status === 'COMPLETED');
   const totalRevenue = settledOrders.reduce((sum, o) => sum + o.grandTotal, 0);
   const totalOrdersCount = orders.length;
   const averageOrderValue = totalOrdersCount > 0 ? (totalRevenue / settledOrders.length || 0) : 0;
@@ -292,8 +296,12 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-3">
           <SettingsIcon className="w-8 h-8 text-primary-500" />
           <div>
-            <h1 className="text-xl font-bold text-gray-900 leading-tight">Owner Control Panel</h1>
-            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Shiv Resto Administration</p>
+            <h1 className="text-xl font-bold text-gray-900 leading-tight">
+              {role === 'owner' ? 'Owner Analytics Dashboard' : 'Super Admin Settings'}
+            </h1>
+            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">
+              {role === 'owner' ? 'Lumière Dining Sales & Metrics' : 'Lumière Dining Administration'}
+            </p>
           </div>
         </div>
 
@@ -308,44 +316,46 @@ export default function AdminDashboard() {
 
       <main className="max-w-6xl mx-auto px-6 mt-6 grid grid-cols-1 md:grid-cols-4 gap-6 grow items-start">
         
-        {/* Navigation Sidebar */}
-        <div className="flex flex-col gap-2 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left cursor-pointer transition-colors ${
-              activeTab === 'analytics' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Analytics & KPIs
-          </button>
-          <button
-            onClick={() => setActiveTab('menu')}
-            className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left cursor-pointer transition-colors ${
-              activeTab === 'menu' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Menu CRUD Manager
-          </button>
-          <button
-            onClick={() => setActiveTab('tables')}
-            className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left cursor-pointer transition-colors ${
-              activeTab === 'tables' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Tables & QR Codes
-          </button>
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left cursor-pointer transition-colors ${
-              activeTab === 'settings' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            General Settings
-          </button>
-        </div>
+        {/* Navigation Sidebar - Hidden for Owner role */}
+        {role === 'super_admin' && (
+          <div className="flex flex-col gap-2 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left cursor-pointer transition-colors ${
+                activeTab === 'analytics' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Analytics & KPIs
+            </button>
+            <button
+              onClick={() => setActiveTab('menu')}
+              className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left cursor-pointer transition-colors ${
+                activeTab === 'menu' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Menu CRUD Manager
+            </button>
+            <button
+              onClick={() => setActiveTab('tables')}
+              className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left cursor-pointer transition-colors ${
+                activeTab === 'tables' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Tables & QR Codes
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left cursor-pointer transition-colors ${
+                activeTab === 'settings' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              General Settings
+            </button>
+          </div>
+        )}
 
         {/* Tab Contents area */}
-        <div className="md:col-span-3">
+        <div className={role === 'owner' ? 'md:col-span-4 w-full' : 'md:col-span-3'}>
           
           {/* ANALYTICS TAB */}
           {activeTab === 'analytics' && (

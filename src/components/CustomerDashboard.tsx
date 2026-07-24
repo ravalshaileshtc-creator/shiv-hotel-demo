@@ -210,7 +210,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   }, [scannedTableId]);
 
   const activeTable = tables.find(t => t.id === scannedTableId);
-  const activeOrder = orders.find(o => o.tableId === scannedTableId && o.status !== 'billed');
+  const activeOrder = orders.find(o => o.tableId === scannedTableId && o.status !== 'COMPLETED' && o.status !== 'REJECTED');
 
   // Categories list
   const categories = ['All', 'Starters', 'Mains', 'Desserts', 'Beverages'];
@@ -331,7 +331,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
       tax: serviceFee,
       discount: totalDiscount,
       grandTotal: cartGrandTotal,
-      status: 'pending',
+      status: 'PLACED',
       timestamp: Date.now(),
       customerPhone: activeCustomer?.phone
     };
@@ -429,14 +429,16 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
     }
   };
 
-  // Timeline helpers
   const getTimelineStage = (status: Order['status']) => {
     switch (status) {
-      case 'pending': return 1;
-      case 'preparing': return 2;
-      case 'ready': return 3;
-      case 'served': return 3;
-      default: return 3;
+      case 'PLACED': return 1;
+      case 'ACCEPTED_BY_KITCHEN': return 2;
+      case 'PREPARING': return 3;
+      case 'READY': return 4;
+      case 'BILLED': return 5;
+      case 'COMPLETED': return 5;
+      case 'REJECTED': return 0;
+      default: return 1;
     }
   };
 
@@ -937,62 +939,88 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                   <div 
                     className="absolute left-[23px] top-6 w-0.5 bg-primary-500 transition-all duration-1000"
                     style={{ 
-                      height: getTimelineStage(activeOrder.status) === 1 ? '0%' : 
-                              getTimelineStage(activeOrder.status) === 2 ? '50%' : '100%' 
+                      height: `${Math.max(0, (getTimelineStage(activeOrder.status) - 1) * 25)}%` 
                     }}
                   ></div>
 
-                  {/* Stage 1: Done */}
+                  {/* Stage 1: Placed */}
                   <div className={`relative flex items-start ${getTimelineStage(activeOrder.status) >= 1 ? 'opacity-100' : 'opacity-40'}`}>
                     <div className="absolute -left-[41px] z-10 w-9 h-9 rounded-full bg-primary-500 flex items-center justify-center shadow-md text-white">
                       <CheckCircle className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-xs text-slate-800">Order Received</h3>
+                      <h3 className="font-bold text-xs text-slate-800">Order Placed</h3>
                       <p className="text-[10px] text-[#546067] mt-0.5">
-                        Confirmed at {new Date(activeOrder.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        Received at {new Date(activeOrder.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </div>
 
-                  {/* Stage 2: Active */}
+                  {/* Stage 2: Accepted by Kitchen */}
                   <div className={`relative flex items-start ${getTimelineStage(activeOrder.status) >= 2 ? 'opacity-100' : 'opacity-40'}`}>
                     <div className={`absolute -left-[41px] z-10 w-9 h-9 rounded-full flex items-center justify-center shadow-md ${
-                      activeOrder.status === 'preparing' ? 'bg-white border-2 border-primary-500 text-primary-500 animate-spin' : 'bg-primary-500 text-white'
+                      activeOrder.status === 'ACCEPTED_BY_KITCHEN' ? 'bg-primary-500 text-white animate-pulse' : 'bg-primary-500 text-white'
+                    }`}>
+                      <Utensils className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-xs text-slate-800">Kitchen Accepted</h3>
+                      <p className="text-[10px] text-[#546067] mt-0.5">
+                        {getTimelineStage(activeOrder.status) >= 2 ? 'Confirmed by Chef' : 'Waiting for confirmation...'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Stage 3: Preparing */}
+                  <div className={`relative flex items-start ${getTimelineStage(activeOrder.status) >= 3 ? 'opacity-100' : 'opacity-40'}`}>
+                    <div className={`absolute -left-[41px] z-10 w-9 h-9 rounded-full flex items-center justify-center shadow-md ${
+                      activeOrder.status === 'PREPARING' ? 'bg-white border-2 border-primary-500 text-primary-500 animate-spin' : 'bg-primary-500 text-white'
                     }`} style={{ animationDuration: '4s' }}>
                       <Flame className="w-5 h-5" />
                     </div>
                     
-                    {activeOrder.status === 'preparing' ? (
+                    {activeOrder.status === 'PREPARING' ? (
                       <div className="pulse-active glass-card rounded-2xl p-4 border border-primary-500/20 grow">
                         <h3 className="font-bold text-xs text-primary-500">Kitchen Preparing</h3>
-                        <p className="text-[10px] text-primary-500/80 mt-0.5">Started Cooking • Expected finish in 6 mins</p>
+                        <p className="text-[10px] text-primary-500/80 mt-0.5">Chef has started cooking your order</p>
                         
                         <div className="mt-2.5 w-full bg-primary-500/10 h-1 rounded-full overflow-hidden">
                           <div className="bg-primary-500 h-full w-2/3 rounded-full animate-pulse"></div>
                         </div>
                       </div>
-                    ) : activeOrder.status === 'pending' ? (
-                      <div>
-                        <h3 className="font-bold text-xs text-slate-400">Kitchen Preparing</h3>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Waiting for kitchen acceptance...</p>
-                      </div>
                     ) : (
                       <div>
                         <h3 className="font-bold text-xs text-slate-800">Kitchen Preparing</h3>
-                        <p className="text-[10px] text-[#546067] mt-0.5">Cooking completed successfully.</p>
+                        <p className="text-[10px] text-[#546067] mt-0.5">
+                          {getTimelineStage(activeOrder.status) > 3 ? 'Cooking completed successfully' : 'Queued for preparation'}
+                        </p>
                       </div>
                     )}
                   </div>
 
-                  {/* Stage 3: Ready/Served */}
-                  <div className={`relative flex items-start ${getTimelineStage(activeOrder.status) >= 3 ? 'opacity-100' : 'opacity-40'}`}>
-                    <div className="absolute -left-[41px] z-10 w-9 h-9 rounded-full bg-slate-200 text-[#546067] flex items-center justify-center shadow-sm">
-                      <Utensils className="w-4 h-4" />
+                  {/* Stage 4: Ready */}
+                  <div className={`relative flex items-start ${getTimelineStage(activeOrder.status) >= 4 ? 'opacity-100' : 'opacity-40'}`}>
+                    <div className="absolute -left-[41px] z-10 w-9 h-9 rounded-full bg-primary-500 text-white flex items-center justify-center shadow-md">
+                      <Sparkles className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-xs text-slate-800">On Its Way to Table</h3>
-                      <p className="text-[10px] text-[#546067] mt-0.5">Expected arrival at table shortly.</p>
+                      <h3 className="font-bold text-xs text-slate-800">Order Ready</h3>
+                      <p className="text-[10px] text-[#546067] mt-0.5">
+                        {getTimelineStage(activeOrder.status) >= 4 ? 'Food is ready! Sent to cashier for billing.' : 'Waiting to be served'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Stage 5: Settle Bill */}
+                  <div className={`relative flex items-start ${getTimelineStage(activeOrder.status) >= 5 ? 'opacity-100' : 'opacity-40'}`}>
+                    <div className="absolute -left-[41px] z-10 w-9 h-9 rounded-full bg-slate-200 text-[#546067] flex items-center justify-center shadow-sm">
+                      <CheckCircle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-xs text-slate-800">Payment Completed</h3>
+                      <p className="text-[10px] text-[#546067] mt-0.5">
+                        {getTimelineStage(activeOrder.status) >= 5 ? 'Bill paid. Thank you for dining with us!' : 'Pending payment settlement'}
+                      </p>
                     </div>
                   </div>
                 </section>

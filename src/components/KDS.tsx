@@ -4,7 +4,6 @@ import {
   Volume2, 
   VolumeX, 
   Clock, 
-  CheckCircle, 
   Flame, 
   Check, 
   RotateCcw,
@@ -78,7 +77,7 @@ export default function KDS() {
   // Monitor incoming orders to play alerts
   useEffect(() => {
     // Collect active pending order IDs
-    const pendingOrders = orders.filter(o => o.status === 'pending');
+    const pendingOrders = orders.filter(o => o.status === 'PLACED');
     
     let playSound = false;
     let speakTable = '';
@@ -130,14 +129,14 @@ export default function KDS() {
     }
   };
 
-  // Active kitchen orders (exclude billed/served orders)
+  // Active kitchen orders (exclude billed/served/ready orders)
   const activeKdsOrders = orders
-    .filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'ready')
+    .filter(o => o.status === 'PLACED' || o.status === 'ACCEPTED_BY_KITCHEN' || o.status === 'PREPARING')
     .sort((a, b) => a.timestamp - b.timestamp); // oldest first
 
   // Accumulate ingredient/dish count in active queue
   const prepSummary = activeKdsOrders
-    .filter(o => o.status === 'preparing')
+    .filter(o => o.status === 'PREPARING')
     .reduce((summary: { [name: string]: number }, order) => {
       order.items.forEach(item => {
         summary[item.name] = (summary[item.name] || 0) + item.quantity;
@@ -146,19 +145,7 @@ export default function KDS() {
     }, {});
 
   // Update order status
-  const transitionOrderStatus = async (orderId: string, currentStatus: Order['status']) => {
-    let nextStatus: Order['status'] = 'pending';
-    
-    if (currentStatus === 'pending') {
-      nextStatus = 'preparing';
-    } else if (currentStatus === 'preparing') {
-      nextStatus = 'ready';
-    } else if (currentStatus === 'ready') {
-      nextStatus = 'served';
-    } else {
-      return;
-    }
-
+  const transitionOrderStatus = async (orderId: string, nextStatus: Order['status']) => {
     const updatedOrders = orders.map(o => {
       if (o.id === orderId) {
         return { ...o, status: nextStatus } as Order;
@@ -166,14 +153,14 @@ export default function KDS() {
       return o;
     });
 
-    // Update active table details if status is served
+    // Update active table details if status is READY
     let updatedTables = tables;
-    if (nextStatus === 'served') {
+    if (nextStatus === 'READY') {
       const targetOrder = orders.find(o => o.id === orderId);
       if (targetOrder) {
         updatedTables = tables.map(t => {
           if (t.id === targetOrder.tableId) {
-            return { ...t, status: 'occupied' } as Table; // Billed will be marked at cashier
+            return { ...t, status: 'occupied' } as Table;
           }
           return t;
         });
@@ -183,11 +170,11 @@ export default function KDS() {
     await updateState({ orders: updatedOrders, tables: updatedTables });
   };
 
-  // Reset status to pending for correction
+  // Reset status to PLACED for correction
   const resetOrderStatus = async (orderId: string) => {
     const updatedOrders = orders.map(o => {
       if (o.id === orderId) {
-        return { ...o, status: 'pending' } as Order;
+        return { ...o, status: 'PLACED' } as Order;
       }
       return o;
     });
@@ -287,9 +274,9 @@ export default function KDS() {
             
             // Urgency color coding
             let borderStyle = 'border-slate-700 bg-slate-800';
-            if (order.status === 'pending') borderStyle = 'border-red-500 bg-slate-800 shadow-lg shadow-red-500/5';
-            if (order.status === 'preparing') borderStyle = 'border-amber-500 bg-slate-800 shadow-md shadow-amber-500/5';
-            if (order.status === 'ready') borderStyle = 'border-green-500 bg-slate-800 shadow-sm';
+            if (order.status === 'PLACED') borderStyle = 'border-red-500 bg-slate-800 shadow-lg shadow-red-500/5';
+            if (order.status === 'ACCEPTED_BY_KITCHEN') borderStyle = 'border-blue-500 bg-slate-800 shadow-md shadow-blue-500/5';
+            if (order.status === 'PREPARING') borderStyle = 'border-amber-500 bg-slate-800 shadow-md shadow-amber-500/5';
 
             return (
               <div 
@@ -343,17 +330,34 @@ export default function KDS() {
 
                 {/* Card Actions Footer */}
                 <div className="p-3 border-t border-slate-700 bg-slate-900/50 flex flex-col gap-2">
-                  {order.status === 'pending' && (
+                  {order.status === 'PLACED' && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => transitionOrderStatus(order.id, 'REJECTED')}
+                        className="flex-1 bg-red-600/20 border border-red-500/30 hover:bg-red-600/35 text-red-400 font-bold py-2 py-2.5 rounded-xl text-xs cursor-pointer transition-colors"
+                      >
+                        Reject
+                      </button>
+                      <button
+                        onClick={() => transitionOrderStatus(order.id, 'ACCEPTED_BY_KITCHEN')}
+                        className="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer shadow-md shadow-primary-500/10 transition-colors animate-pulse"
+                      >
+                        Accept
+                      </button>
+                    </div>
+                  )}
+
+                  {order.status === 'ACCEPTED_BY_KITCHEN' && (
                     <button
-                      onClick={() => transitionOrderStatus(order.id, 'pending')}
-                      className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-red-600/10"
+                      onClick={() => transitionOrderStatus(order.id, 'PREPARING')}
+                      className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-amber-500/10 transition-colors"
                     >
                       <Flame className="w-4 h-4" />
                       Start Preparing
                     </button>
                   )}
-                  
-                  {order.status === 'preparing' && (
+
+                  {order.status === 'PREPARING' && (
                     <div className="flex gap-2">
                       <button
                         onClick={() => resetOrderStatus(order.id)}
@@ -362,23 +366,13 @@ export default function KDS() {
                         <RotateCcw className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => transitionOrderStatus(order.id, 'preparing')}
-                        className="grow bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-amber-500/10"
+                        onClick={() => transitionOrderStatus(order.id, 'READY')}
+                        className="grow bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-green-600/10 transition-colors"
                       >
-                        <CheckCircle className="w-4 h-4" />
+                        <Check className="w-4 h-4" />
                         Mark Ready
                       </button>
                     </div>
-                  )}
-
-                  {order.status === 'ready' && (
-                    <button
-                      onClick={() => transitionOrderStatus(order.id, 'ready')}
-                      className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-green-600/10"
-                    >
-                      <Check className="w-4 h-4" />
-                      Mark Served
-                    </button>
                   )}
                 </div>
               </div>

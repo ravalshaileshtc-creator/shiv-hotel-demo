@@ -267,7 +267,7 @@ function executePlaceOrder(items: any[], tableId: string) {
     tax: serviceFee,
     discount,
     grandTotal,
-    status: 'pending',
+    status: 'PLACED',
     timestamp: Date.now()
   };
 
