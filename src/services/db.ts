@@ -170,26 +170,17 @@ let localState: DBState = {
   ]
 };
 
-// Check if Firebase config is saved in localStorage
 const getFirebaseConfig = () => {
-  const config = localStorage.getItem('firebase_config');
-  if (!config) {
-    // Return hardcoded default Firebase Configuration as requested
-    return {
-      apiKey: "AIzaSyBmMQGivHN43yPPURpFWQFI0Ttjj4sNsWI",
-      authDomain: "lumiere-dining-pos.firebaseapp.com",
-      projectId: "lumiere-dining-pos",
-      storageBucket: "lumiere-dining-pos.firebasestorage.app",
-      messagingSenderId: "30146660396",
-      appId: "1:30146660396:web:3d3d08a9a7518d63916989",
-      measurementId: "G-MKH50EF089"
-    };
-  }
-  try {
-    return JSON.parse(config);
-  } catch (e) {
-    return null;
-  }
+  // Always return the correct Lumiere Dining Firestore project to prevent localstorage mismatch
+  return {
+    apiKey: "AIzaSyBmMQGivHN43yPPURpFWQFI0Ttjj4sNsWI",
+    authDomain: "lumiere-dining-pos.firebaseapp.com",
+    projectId: "lumiere-dining-pos",
+    storageBucket: "lumiere-dining-pos.firebasestorage.app",
+    messagingSenderId: "30146660396",
+    appId: "1:30146660396:web:3d3d08a9a7518d63916989",
+    measurementId: "G-MKH50EF089"
+  };
 };
 
 let firebaseApp: any = null;

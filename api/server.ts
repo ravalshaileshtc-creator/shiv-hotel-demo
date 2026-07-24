@@ -7,6 +7,8 @@ import { dirname } from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 
 dotenv.config();
 
@@ -15,6 +17,20 @@ const __dirname = dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
 const PORT = process.env.PORT || 3000;
+
+// Initialize Firebase App on backend to sync AI chatbot orders
+const firebaseConfig = {
+  apiKey: "AIzaSyBmMQGivHN43yPPURpFWQFI0Ttjj4sNsWI",
+  authDomain: "lumiere-dining-pos.firebaseapp.com",
+  projectId: "lumiere-dining-pos",
+  storageBucket: "lumiere-dining-pos.firebasestorage.app",
+  messagingSenderId: "30146660396",
+  appId: "1:30146660396:web:3d3d08a9a7518d63916989",
+  measurementId: "G-MKH50EF089"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const firestoreDb = getFirestore(firebaseApp);
 
 // Initialize mock database state
 let dbState = {
@@ -258,10 +274,16 @@ function executePlaceOrder(items: any[], tableId: string) {
   dbState.orders.push(newOrder);
   dbState.tables = dbState.tables.map(t => {
     if (t.id === resolvedTableId) {
-      return { ...t, status: 'occupied', activeOrderId: newOrder.id };
+      const updatedTable = { ...t, status: 'occupied', activeOrderId: newOrder.id };
+      // Sync table state to Firestore
+      setDoc(doc(firestoreDb, 'tables', resolvedTableId), updatedTable).catch(e => console.error('Server Firestore table update failed:', e));
+      return updatedTable;
     }
     return t;
   }) as any[];
+
+  // Sync order to Firestore
+  setDoc(doc(firestoreDb, 'orders', newOrder.id), newOrder).catch(e => console.error('Server Firestore order write failed:', e));
 
   broadcastUpdate();
   return { success: true, orderId: newOrder.id };
