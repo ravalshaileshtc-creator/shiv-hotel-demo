@@ -126,7 +126,84 @@ const ThreeBurger = () => {
   return <div ref={containerRef} className="w-full h-full" />;
 };
 
+const translations = {
+  en: {
+    menu: "Menu",
+    scan: "Scan",
+    cart: "Cart",
+    status: "Status",
+    vegOnly: "Veg Only",
+    searchPlaceholder: "Search dishes, drinks, desserts...",
+    addToCart: "Add to Cart",
+    checkout: "Checkout",
+    placeOrder: "Place Order",
+    subtotal: "Subtotal",
+    tax: "Tax",
+    discount: "Discount",
+    grandTotal: "Grand Total",
+    orderPlaced: "Order Placed Successfully",
+    orderStatusTimeline: "Order Live Status Tracking",
+    placed: "Placed",
+    accepted: "Accepted",
+    preparing: "Preparing",
+    ready: "Ready",
+    completed: "Completed",
+    welcome: "Welcome",
+    scanTable: "Scan Table QR to Order",
+    aiChatbot: "AI Dining Assistant",
+    chatPlaceholder: "Ask me anything about the menu...",
+    selectCustomization: "Customize your order",
+    loyaltyPoints: "Loyalty Points",
+    redeemPoints: "Redeem Points",
+    applyPromo: "Promo Applied",
+    tableGuest: "Table Guest",
+    cartEmpty: "Your cart is empty 🥣"
+  },
+  hi: {
+    menu: "मेनू",
+    scan: "स्कैन",
+    cart: "कार्ट",
+    status: "ऑर्डर स्थिति",
+    vegOnly: "केवल शाकाहारी",
+    searchPlaceholder: "व्यंजन, पेय, डेसर्ट खोजें...",
+    addToCart: "कार्ट में जोड़ें",
+    checkout: "चेकआउट",
+    placeOrder: "ऑर्डर दें",
+    subtotal: "उपयोग राशि",
+    tax: "टैक्स",
+    discount: "छूट",
+    grandTotal: "कुल राशि",
+    orderPlaced: "ऑर्डर सफलतापूर्वक सबमिट हुआ",
+    orderStatusTimeline: "लाइव ऑर्डर ट्रैकर",
+    placed: "ऑर्डर भेजा गया",
+    accepted: "स्वीकार किया गया",
+    preparing: "तैयार हो रहा है",
+    ready: "तैयार है",
+    completed: "पूरा हुआ",
+    welcome: "स्वागत है",
+    scanTable: "ऑर्डर करने के लिए क्यूआर कोड स्कैन करें",
+    aiChatbot: "AI भोजन सहायक",
+    chatPlaceholder: "मेन्यू के बारे में कुछ भी पूछें...",
+    selectCustomization: "ऑर्डर कस्टमाइज़ करें",
+    loyaltyPoints: "लॉयल्टी पॉइंट्स",
+    redeemPoints: "पॉइंट्स का उपयोग करें",
+    applyPromo: "प्रोमो कोड लागू हुआ",
+    tableGuest: "टेबल अतिथि",
+    cartEmpty: "आपकी कार्ट अभी खाली है 🥣"
+  }
+};
+
 export default function CustomerDashboard({ restaurantId, tableId }: CustomerDashboardProps) {
+  // Translation States
+  const [lang, setLang] = useState<'en' | 'hi'>((localStorage.getItem('app_lang') as any) || 'en');
+  const t = translations[lang];
+
+  const toggleLanguage = () => {
+    const nextLang = lang === 'en' ? 'hi' : 'en';
+    setLang(nextLang);
+    localStorage.setItem('app_lang', nextLang);
+  };
+
   // DB States
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
@@ -524,13 +601,21 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
               </span>
             </div>
           </div>
-          <button 
-            onClick={() => setActiveTab('scan')}
-            className="text-primary-500 hover:opacity-85 transition-opacity"
-            title="Scan QR Code"
-          >
-            <MapPin className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={toggleLanguage}
+              className="text-[10px] font-extrabold text-primary-600 bg-primary-50 border border-primary-100 px-2.5 py-1 rounded-lg hover:bg-primary-100 transition-colors"
+            >
+              {lang === 'en' ? 'हिंदी' : 'English'}
+            </button>
+            <button 
+              onClick={() => setActiveTab('scan')}
+              className="text-primary-500 hover:opacity-85 transition-opacity p-1"
+              title="Scan QR Code"
+            >
+              <MapPin className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -547,7 +632,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#546067]" />
                 <input 
                   type="text"
-                  placeholder="Search dishes, drinks, desserts..."
+                  placeholder={t.searchPlaceholder}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-4 py-2.5 rounded-2xl bg-white border border-gray-100 shadow-sm focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
@@ -583,7 +668,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                   }`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full inline-block ${vegOnly ? 'bg-green-600' : 'bg-gray-400'}`}></span>
-                  Veg Only
+                  {t.vegOnly}
                 </button>
               </div>
             </section>
@@ -1138,7 +1223,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
             }`}
           >
             <Utensils className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-semibold">Menu</span>
+            <span className="text-[10px] mt-1 font-semibold">{t.menu}</span>
           </button>
           
           <button 
@@ -1148,9 +1233,9 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
             }`}
           >
             <QrCode className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-semibold">Scan</span>
+            <span className="text-[10px] mt-1 font-semibold">{t.scan}</span>
           </button>
-
+ 
           <button 
             onClick={() => setActiveTab('cart')}
             className={`flex flex-col items-center justify-center relative transition-transform hover:scale-105 cursor-pointer ${
@@ -1158,14 +1243,14 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
             }`}
           >
             <ShoppingBag className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-semibold">Cart</span>
+            <span className="text-[10px] mt-1 font-semibold">{t.cart}</span>
             {cart.length > 0 && (
               <span className="absolute -top-1.5 -right-1.5 bg-primary-500 text-white font-bold text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-white">
                 {cart.reduce((s, c) => s + c.quantity, 0)}
               </span>
             )}
           </button>
-
+ 
           <button 
             onClick={() => setActiveTab('status')}
             className={`flex flex-col items-center justify-center transition-transform hover:scale-105 cursor-pointer ${
@@ -1173,7 +1258,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
             }`}
           >
             <Compass className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-semibold">Orders</span>
+            <span className="text-[10px] mt-1 font-semibold">{t.status}</span>
           </button>
         </div>
       </nav>
