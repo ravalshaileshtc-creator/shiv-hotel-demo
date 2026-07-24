@@ -972,6 +972,11 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                           <div className="bg-primary-500 h-full w-2/3 rounded-full animate-pulse"></div>
                         </div>
                       </div>
+                    ) : activeOrder.status === 'pending' ? (
+                      <div>
+                        <h3 className="font-bold text-xs text-slate-400">Kitchen Preparing</h3>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Waiting for kitchen acceptance...</p>
+                      </div>
                     ) : (
                       <div>
                         <h3 className="font-bold text-xs text-slate-800">Kitchen Preparing</h3>
