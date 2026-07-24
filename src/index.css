@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: 'Manrope', sans-serif;
+  --font-sans: 'Manrope', sans-serif;
+  
+  --color-primary-50: #f0f7fc;
+  --color-primary-100: #dbebfa;
+  --color-primary-500: #005dac;
+  --color-primary-600: #004c8c;
+  --color-primary-700: #003a6d;
+  
+  --color-dark-bg: #090b10;
+  --color-dark-card: #131722;
+  --color-dark-border: #1f2536;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #f9f9f9;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 93, 172, 0.1);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 93, 172, 0.25);
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.dark-glass {
+  background: rgba(19, 23, 34, 0.8);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* QR Camera Scanner Viewfinder styling */
+.scanner-frame::before {
+  content: '';
+  position: absolute;
+  top: -2px; left: -2px; right: -2px; bottom: -2px;
+  border: 2px solid white;
+  border-radius: 24px;
+  mask: 
+      conic-gradient(from 0deg at 20% 20%, transparent 270deg, black 270deg),
+      conic-gradient(from 90deg at 80% 20%, transparent 270deg, black 270deg),
+      conic-gradient(from 180deg at 80% 80%, transparent 270deg, black 270deg),
+      conic-gradient(from 270deg at 20% 80%, transparent 270deg, black 270deg);
+  -webkit-mask: 
+      conic-gradient(from 0deg at 30px 30px, transparent 270deg, black 270deg),
+      conic-gradient(from 90deg at calc(100% - 30px) 30px, transparent 270deg, black 270deg),
+      conic-gradient(from 180deg at calc(100% - 30px) calc(100% - 30px), transparent 270deg, black 270deg),
+      conic-gradient(from 270deg at 30px calc(100% - 30px) , transparent 270deg, black 270deg);
+}
+
+@keyframes scan-line {
+  0% { top: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.scan-laser {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #005dac, transparent);
+  box-shadow: 0 0 15px #005dac;
+  position: absolute;
+  width: 100%;
+  animation: scan-line 3s infinite ease-in-out;
+}
+
+/* Status Animations */
+@keyframes status-pulse-pending {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 93, 172, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(0, 93, 172, 0); }
+}
+
+.pulse-active {
+  animation: status-pulse-pending 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Thermal Printer styling */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #thermal-receipt, #thermal-receipt * {
+    visibility: visible;
+  }
+  #thermal-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 10px;
+    background: white;
+    color: black;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    line-height: 1.2;
+  }
+  #thermal-receipt {
+    box-shadow: none !important;
+    border: none !important;
+  }
+  @page {
+    size: auto;
+    margin: 0mm;
+  }
+}
