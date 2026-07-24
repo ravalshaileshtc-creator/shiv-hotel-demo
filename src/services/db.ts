@@ -360,6 +360,8 @@ const notifySubscribers = () => {
 
 // Update State helper
 export const updateState = async (partialState: Partial<DBState>) => {
+  const previousState = { ...localState };
+
   // Optimistically update local cache
   localState = { ...localState, ...partialState } as DBState;
   notifySubscribers();
@@ -372,25 +374,37 @@ export const updateState = async (partialState: Partial<DBState>) => {
       
       if (partialState.menu) {
         for (const item of partialState.menu) {
-          await setDoc(doc(firestoreDb, 'menu', item.id), item);
+          const prev = previousState.menu.find(m => m.id === item.id);
+          if (!prev || JSON.stringify(prev) !== JSON.stringify(item)) {
+            await setDoc(doc(firestoreDb, 'menu', item.id), item);
+          }
         }
       }
       
       if (partialState.tables) {
         for (const item of partialState.tables) {
-          await setDoc(doc(firestoreDb, 'tables', item.id), item);
+          const prev = previousState.tables.find(t => t.id === item.id);
+          if (!prev || JSON.stringify(prev) !== JSON.stringify(item)) {
+            await setDoc(doc(firestoreDb, 'tables', item.id), item);
+          }
         }
       }
       
       if (partialState.orders) {
         for (const item of partialState.orders) {
-          await setDoc(doc(firestoreDb, 'orders', item.id), item);
+          const prev = previousState.orders.find(o => o.id === item.id);
+          if (!prev || JSON.stringify(prev) !== JSON.stringify(item)) {
+            await setDoc(doc(firestoreDb, 'orders', item.id), item);
+          }
         }
       }
       
       if (partialState.customers) {
         for (const item of partialState.customers) {
-          await setDoc(doc(firestoreDb, 'customers', item.phone), item);
+          const prev = previousState.customers.find(c => c.phone === item.phone);
+          if (!prev || JSON.stringify(prev) !== JSON.stringify(item)) {
+            await setDoc(doc(firestoreDb, 'customers', item.phone), item);
+          }
         }
       }
     } catch (e) {
