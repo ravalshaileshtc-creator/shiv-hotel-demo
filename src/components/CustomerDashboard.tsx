@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type MenuItem, type Table, type Order, type Settings, type Customer, subscribeToState, updateState } from '../services/db';
+import { type MenuItem, type Table, type Order, type Settings, type Customer, subscribeToState, updateState, getRestaurantTenant } from '../services/db';
 import { 
   Search, 
   ShoppingBag, 
@@ -18,7 +18,8 @@ import {
   Flame,
   Compass,
   Lightbulb,
-  CheckCircle
+  CheckCircle,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -139,6 +140,23 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
     currencySymbol: '$'
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
+
+  // Tenant subscription checking states
+  const [tenantStatus, setTenantStatus] = useState<'ACTIVE' | 'PENDING_PAYMENT' | 'SUSPENDED' | null>(null);
+  const [tenantName, setTenantName] = useState<string>('Lumière Dining');
+
+  useEffect(() => {
+    const loadTenant = async () => {
+      const tenant = await getRestaurantTenant(restaurantId);
+      if (tenant) {
+        setTenantStatus(tenant.status);
+        setTenantName(tenant.name);
+      } else {
+        setTenantStatus('ACTIVE'); // fallback
+      }
+    };
+    loadTenant();
+  }, [restaurantId]);
 
   // Navigation tab: 'menu' | 'scan' | 'cart' | 'status'
   const [activeTab, setActiveTab] = useState<'menu' | 'scan' | 'cart' | 'status'>('menu');
@@ -446,6 +464,44 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
       default: return 1;
     }
   };
+
+  if (tenantStatus === 'PENDING_PAYMENT' || tenantStatus === 'SUSPENDED') {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+        {/* Glowing shapes */}
+        <div className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full bg-red-600/10 blur-[100px] pointer-events-none"></div>
+        
+        <div className="max-w-md w-full text-center relative z-10 flex flex-col items-center gap-6 bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+          <div className="w-16 h-16 rounded-3xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 shadow-lg">
+            <Lock className="w-8 h-8 animate-pulse" />
+          </div>
+
+          <div>
+            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest bg-red-500/10 border border-red-500/20 px-3.5 py-1.5 rounded-full inline-block">
+              Subscription Inactive
+            </span>
+            <h1 className="text-2xl font-black text-white mt-4 tracking-tight leading-none font-display">
+              {tenantName}
+            </h1>
+            <p className="text-xs text-slate-400 mt-4 leading-relaxed">
+              This restaurant's ordering portal is temporarily locked. Please ask the manager or owner to settle the monthly platform subscription of <strong>₹499</strong> to restore access.
+            </p>
+          </div>
+
+          <div className="w-full border-t border-slate-800 pt-4 flex flex-col gap-2 text-left text-xs text-slate-400">
+            <div className="flex justify-between">
+              <span>Tenant Status:</span>
+              <span className="font-bold text-red-500 uppercase">{tenantStatus}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Platform Fee:</span>
+              <span className="font-bold text-white">₹499 / month</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] pb-32 font-sans select-none text-slate-900 relative">

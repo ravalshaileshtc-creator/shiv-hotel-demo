@@ -4,7 +4,9 @@ import {
   collection, 
   doc, 
   onSnapshot, 
-  setDoc
+  setDoc,
+  getDoc,
+  getDocs
 } from 'firebase/firestore';
 
 export interface MenuItem {
@@ -187,11 +189,99 @@ let firebaseApp: any = null;
 let firestoreDb: any = null;
 let isFirebaseMode = false;
 let eventSource: EventSource | null = null;
+let activeRestaurantId = 'lumiere-dining'; // default fallback
+
+export const getActiveRestaurantId = () => {
+  const searchParams = new URLSearchParams(window.location.search);
+  const qId = searchParams.get('restaurantId');
+  if (qId) {
+    localStorage.setItem('saas_restaurant_id', qId);
+    activeRestaurantId = qId;
+    return qId;
+  }
+  const savedId = localStorage.getItem('saas_restaurant_id');
+  if (savedId) {
+    activeRestaurantId = savedId;
+    return savedId;
+  }
+  return activeRestaurantId;
+};
+
+export interface RestaurantTenant {
+  id: string;
+  name: string;
+  ownerPhone: string;
+  status: 'ACTIVE' | 'PENDING_PAYMENT' | 'SUSPENDED';
+  subscriptionExpiresAt: number;
+  upiId: string;
+}
+
+export const getRestaurantTenant = async (restaurantId: string): Promise<RestaurantTenant | null> => {
+  if (isFirebaseMode && firestoreDb) {
+    try {
+      const tenantDoc = await getDoc(doc(firestoreDb, 'restaurants', restaurantId));
+      if (tenantDoc.exists()) {
+        return { id: tenantDoc.id, ...tenantDoc.data() } as RestaurantTenant;
+      }
+    } catch (e) {
+      console.error('Failed to fetch tenant metadata:', e);
+    }
+  }
+  // Local mock fallback for simulation
+  return {
+    id: restaurantId,
+    name: restaurantId === 'lumiere-dining' ? 'Lumière Dining' : 'Demo Restaurant',
+    ownerPhone: '9876543210',
+    status: 'ACTIVE',
+    subscriptionExpiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+    upiId: 'lumiere@upi'
+  };
+};
+
+export const getAllRestaurantTenants = async (): Promise<RestaurantTenant[]> => {
+  if (isFirebaseMode && firestoreDb) {
+    try {
+      const snap = await getDocs(collection(firestoreDb, 'restaurants'));
+      return snap.docs.map(d => ({ id: d.id, ...d.data() } as RestaurantTenant));
+    } catch (e) {
+      console.error('Failed to get tenants:', e);
+    }
+  }
+  // Local mock list
+  return [
+    {
+      id: 'lumiere-dining',
+      name: 'Lumière Dining',
+      ownerPhone: '9876543210',
+      status: 'ACTIVE',
+      subscriptionExpiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+      upiId: 'lumiere@upi'
+    }
+  ];
+};
+
+export const updateRestaurantTenant = async (tenant: RestaurantTenant) => {
+  if (isFirebaseMode && firestoreDb) {
+    try {
+      await setDoc(doc(firestoreDb, 'restaurants', tenant.id), {
+        name: tenant.name,
+        ownerPhone: tenant.ownerPhone,
+        status: tenant.status,
+        subscriptionExpiresAt: tenant.subscriptionExpiresAt,
+        upiId: tenant.upiId
+      });
+    } catch (e) {
+      console.error('Failed to update tenant:', e);
+    }
+  }
+};
+
 const subscribers = new Set<(state: DBState) => void>();
 
 // Initialize connection
 export const initSync = () => {
   const config = getFirebaseConfig();
+  getActiveRestaurantId(); // Resolve restaurant ID
   
   // Clean up existing connections
   if (eventSource) {
@@ -208,7 +298,7 @@ export const initSync = () => {
       }
       firestoreDb = getFirestore(firebaseApp);
       isFirebaseMode = true;
-      console.log('Sync Mode: Firebase Firestore');
+      console.log('Sync Mode: Firebase Firestore (Tenant:', activeRestaurantId, ')');
       
       // Setup Firestore Real-time Subscriptions
       setupFirestoreSubscriptions();
@@ -243,14 +333,12 @@ const setupSSESubscription = () => {
   
   eventSource.onerror = (err) => {
     console.error('SSE Error:', err);
-    // SSE will automatically attempt reconnection
   };
 };
 
-// Setup Firestore subscriptions for each collection
+// Setup Firestore subscriptions for each collection (Tenant-isolated subcollections)
 const setupFirestoreSubscriptions = () => {
   if (!firestoreDb) return;
-
 
   const loadedData: Partial<DBState> = {};
   
@@ -274,11 +362,11 @@ const setupFirestoreSubscriptions = () => {
   };
 
   // 1. Menu Snapshot
-  onSnapshot(collection(firestoreDb, 'menu'), (snapshot) => {
+  onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'menu'), (snapshot) => {
     if (snapshot.empty) {
       // Auto-populate menu
       localState.menu.forEach(item => {
-        setDoc(doc(firestoreDb, 'menu', item.id), item);
+        setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'menu', item.id), item);
       });
       loadedData.menu = localState.menu;
     } else {
@@ -288,11 +376,11 @@ const setupFirestoreSubscriptions = () => {
   });
 
   // 2. Tables Snapshot
-  onSnapshot(collection(firestoreDb, 'tables'), (snapshot) => {
+  onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'tables'), (snapshot) => {
     if (snapshot.empty) {
       // Auto-populate tables
       localState.tables.forEach(table => {
-        setDoc(doc(firestoreDb, 'tables', table.id), table);
+        setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'tables', table.id), table);
       });
       loadedData.tables = localState.tables;
     } else {
@@ -302,16 +390,16 @@ const setupFirestoreSubscriptions = () => {
   });
 
   // 3. Orders Snapshot
-  onSnapshot(collection(firestoreDb, 'orders'), (snapshot) => {
+  onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'orders'), (snapshot) => {
     loadedData.orders = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
     checkAndEmit();
   });
 
   // 4. Customers Snapshot
-  onSnapshot(collection(firestoreDb, 'customers'), (snapshot) => {
+  onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'customers'), (snapshot) => {
     if (snapshot.empty) {
       localState.customers.forEach(c => {
-        setDoc(doc(firestoreDb, 'customers', c.phone), c);
+        setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'customers', c.phone), c);
       });
       loadedData.customers = localState.customers;
     } else {
@@ -320,14 +408,13 @@ const setupFirestoreSubscriptions = () => {
     checkAndEmit();
   });
 
-  // 5. Settings Snapshot (Single doc settings/config)
-  onSnapshot(doc(firestoreDb, 'settings', 'main'), (snapshot) => {
+  // 5. Settings Snapshot
+  onSnapshot(doc(firestoreDb, 'restaurants', activeRestaurantId, 'settings', 'main'), (snapshot) => {
     if (snapshot.exists()) {
       loadedData.settings = snapshot.data() as Settings;
     } else {
-      // Initialize settings if empty
       loadedData.settings = localState.settings;
-      setDoc(doc(firestoreDb, 'settings', 'main'), localState.settings);
+      setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'settings', 'main'), localState.settings);
     }
     checkAndEmit();
   });
@@ -336,7 +423,6 @@ const setupFirestoreSubscriptions = () => {
 // Subscribe UI components to state updates
 export const subscribeToState = (callback: (state: DBState) => void) => {
   subscribers.add(callback);
-  // Send current cache immediately
   if (localState.menu.length > 0 || localState.tables.length > 0) {
     callback(localState);
   }
@@ -349,7 +435,7 @@ const notifySubscribers = () => {
   subscribers.forEach(cb => cb(localState));
 };
 
-// Update State helper
+// Update State helper (writes to tenant subcollections)
 export const updateState = async (partialState: Partial<DBState>) => {
   const previousState = { ...localState };
 
@@ -360,14 +446,14 @@ export const updateState = async (partialState: Partial<DBState>) => {
   if (isFirebaseMode && firestoreDb) {
     try {
       if (partialState.settings) {
-        await setDoc(doc(firestoreDb, 'settings', 'main'), partialState.settings);
+        await setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'settings', 'main'), partialState.settings);
       }
       
       if (partialState.menu) {
         for (const item of partialState.menu) {
           const prev = previousState.menu.find(m => m.id === item.id);
           if (!prev || JSON.stringify(prev) !== JSON.stringify(item)) {
-            await setDoc(doc(firestoreDb, 'menu', item.id), item);
+            await setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'menu', item.id), item);
           }
         }
       }
@@ -376,7 +462,7 @@ export const updateState = async (partialState: Partial<DBState>) => {
         for (const item of partialState.tables) {
           const prev = previousState.tables.find(t => t.id === item.id);
           if (!prev || JSON.stringify(prev) !== JSON.stringify(item)) {
-            await setDoc(doc(firestoreDb, 'tables', item.id), item);
+            await setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'tables', item.id), item);
           }
         }
       }
@@ -385,7 +471,7 @@ export const updateState = async (partialState: Partial<DBState>) => {
         for (const item of partialState.orders) {
           const prev = previousState.orders.find(o => o.id === item.id);
           if (!prev || JSON.stringify(prev) !== JSON.stringify(item)) {
-            await setDoc(doc(firestoreDb, 'orders', item.id), item);
+            await setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'orders', item.id), item);
           }
         }
       }
@@ -394,7 +480,7 @@ export const updateState = async (partialState: Partial<DBState>) => {
         for (const item of partialState.customers) {
           const prev = previousState.customers.find(c => c.phone === item.phone);
           if (!prev || JSON.stringify(prev) !== JSON.stringify(item)) {
-            await setDoc(doc(firestoreDb, 'customers', item.phone), item);
+            await setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'customers', item.phone), item);
           }
         }
       }

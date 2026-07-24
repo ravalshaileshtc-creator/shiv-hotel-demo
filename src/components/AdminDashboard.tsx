@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, saveFirebaseConfig, getActiveFirebaseConfig, getIsFirebaseMode } from '../services/db';
+import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, saveFirebaseConfig, getActiveFirebaseConfig, getIsFirebaseMode, getAllRestaurantTenants, updateRestaurantTenant, type RestaurantTenant } from '../services/db';
 import { 
   TrendingUp, 
   ShoppingBag, 
@@ -38,7 +38,26 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
   });
 
   // UI Navigation
-  const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'tables' | 'settings'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'tables' | 'settings' | 'tenants'>('analytics');
+  const [tenants, setTenants] = useState<RestaurantTenant[]>([]);
+
+  useEffect(() => {
+    const loadTenants = async () => {
+      const tenantList = await getAllRestaurantTenants();
+      setTenants(tenantList);
+    };
+    if (role === 'super_admin') {
+      loadTenants();
+    }
+  }, [role]);
+
+  const handleToggleTenantStatus = async (tenant: RestaurantTenant) => {
+    const newStatus = tenant.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+    const updated = { ...tenant, status: newStatus as any };
+    await updateRestaurantTenant(updated);
+    const tenantList = await getAllRestaurantTenants();
+    setTenants(tenantList);
+  };
 
   // Menu Form States
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
@@ -354,6 +373,14 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
               }`}
             >
               General Settings
+            </button>
+            <button
+              onClick={() => setActiveTab('tenants')}
+              className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left cursor-pointer transition-colors ${
+                activeTab === 'tenants' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              SaaS Tenants (₹499)
             </button>
           </div>
         )}
@@ -727,6 +754,60 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {/* SAAS TENANTS TAB */}
+          {activeTab === 'tenants' && (
+            <div className="flex flex-col gap-6">
+              <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+                <h2 className="text-base font-extrabold text-gray-900 mb-4">SaaS Platform Tenants</h2>
+                
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider">
+                        <th className="pb-3">Restaurant</th>
+                        <th className="pb-3">Owner Contact</th>
+                        <th className="pb-3">Expiry Date</th>
+                        <th className="pb-3">Status</th>
+                        <th className="pb-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tenants.map(t => (
+                        <tr key={t.id} className="border-b border-gray-50 last:border-0">
+                          <td className="py-3.5 font-bold text-gray-800">
+                            <div>{t.name}</div>
+                            <div className="text-[10px] font-mono text-gray-400 mt-0.5">{t.id}</div>
+                          </td>
+                          <td className="py-3.5 text-gray-600">{t.ownerPhone}</td>
+                          <td className="py-3.5 text-gray-600">{new Date(t.subscriptionExpiresAt).toLocaleDateString()}</td>
+                          <td className="py-3.5">
+                            <span className={`px-2 py-0.5 rounded-full font-bold text-[9px] ${
+                              t.status === 'ACTIVE' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                            }`}>
+                              {t.status}
+                            </span>
+                          </td>
+                          <td className="py-3.5 text-right">
+                            <button
+                              onClick={() => handleToggleTenantStatus(t)}
+                              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-colors ${
+                                t.status === 'ACTIVE'
+                                  ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                  : 'bg-green-50 text-green-600 hover:bg-green-100'
+                              }`}
+                            >
+                              {t.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
 
