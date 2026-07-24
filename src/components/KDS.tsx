@@ -222,7 +222,7 @@ export default function KDS() {
         <div className="flex items-center gap-3">
           <ChefHat className="w-8 h-8 text-primary-500" />
           <div>
-            <h1 className="text-xl font-black tracking-wide text-white">Shiv Resto Kitchen</h1>
+            <h1 className="text-xl font-black tracking-wide text-white">Lumière Dining Kitchen</h1>
             <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Kitchen Display System (KDS)</p>
           </div>
         </div>
