@@ -408,11 +408,19 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userText,
-          history: chatHistory
+          history: chatHistory,
+          tableId: scannedTableId
         })
       });
       const data = await response.json();
       setChatHistory(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      
+      if (data.orderPlaced) {
+        setTimeout(() => {
+          setIsChatOpen(false);
+          setActiveTab('status');
+        }, 2500);
+      }
     } catch (e) {
       console.error('Failed to chat:', e);
       setChatHistory(prev => [...prev, { role: 'assistant', content: "I'm having a connection issue. Can you please repeat that? ☕" }]);

@@ -159,8 +159,117 @@ app.post('/api/sync/update', (req, res) => {
 });
 
 // Google Gemini AI chat endpoint
+const placeOrderDeclaration = {
+  name: 'placeOrder',
+  description: 'Place an order for menu items on behalf of the customer. Use this when the customer explicitly asks to order, buy, get, or add items to their bill.',
+  parameters: {
+    type: 'OBJECT',
+    properties: {
+      items: {
+        type: 'ARRAY',
+        description: 'The list of menu items to order.',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            name: {
+              type: 'STRING',
+              description: 'The exact name of the menu item (e.g. "Signature Lumière Burger", "Truffle Tagliatelle", "Indigo Spark", "Shrimp Caesar", "Lava Delice", "Black Truffle Fries").'
+            },
+            quantity: {
+              type: 'INTEGER',
+              description: 'The quantity of the item to order.'
+            },
+            notes: {
+              type: 'STRING',
+              description: 'Any special instructions or customization requests from the customer.'
+            }
+          },
+          required: ['name', 'quantity']
+        }
+      },
+      tableId: {
+        type: 'STRING',
+        description: 'The ID of the dining table placing the order.'
+      }
+    },
+    required: ['items']
+  }
+};
+
+function executePlaceOrder(items: any[], tableId: string) {
+  if (!tableId) {
+    return { success: false, error: 'Table ID is missing. Please scan a table QR code first.' };
+  }
+
+  const resolvedTableId = tableId.startsWith('table-') ? tableId : `table-${tableId}`;
+  const matchedTable = dbState.tables.find(t => t.id === resolvedTableId);
+  if (!matchedTable) {
+    return { success: false, error: `Table "${tableId}" not found in our database.` };
+  }
+
+  const orderItems: any[] = [];
+  let subtotal = 0;
+
+  for (const item of items) {
+    const menuItem = dbState.menu.find(m => 
+      m.name.toLowerCase() === item.name.toLowerCase() || 
+      m.name.toLowerCase().includes(item.name.toLowerCase())
+    );
+    if (!menuItem) {
+      return { success: false, error: `Menu item "${item.name}" was not found.` };
+    }
+    if (!menuItem.isAvailable) {
+      return { success: false, error: `"${menuItem.name}" is currently sold out.` };
+    }
+    
+    const qty = Math.max(1, parseInt(item.quantity) || 1);
+    orderItems.push({
+      menuItemId: menuItem.id,
+      name: menuItem.name,
+      price: menuItem.price,
+      quantity: qty,
+      notes: item.notes || '',
+      customizations: []
+    });
+    subtotal += menuItem.price * qty;
+  }
+
+  if (orderItems.length === 0) {
+    return { success: false, error: 'No valid items to order.' };
+  }
+
+  const serviceFee = parseFloat((subtotal * 0.1).toFixed(2));
+  const discount = parseFloat((subtotal * 0.1).toFixed(2)); // 10% welcome discount
+  const grandTotal = Math.max(0, subtotal + serviceFee - discount);
+
+  const newOrder = {
+    id: `ord-${Date.now()}`,
+    restaurantId: 'lumiere-1',
+    tableId: resolvedTableId,
+    items: orderItems,
+    subtotal,
+    tax: serviceFee,
+    discount,
+    grandTotal,
+    status: 'pending',
+    timestamp: Date.now()
+  };
+
+  dbState.orders.push(newOrder);
+  dbState.tables = dbState.tables.map(t => {
+    if (t.id === resolvedTableId) {
+      return { ...t, status: 'occupied', activeOrderId: newOrder.id };
+    }
+    return t;
+  }) as any[];
+
+  broadcastUpdate();
+  return { success: true, orderId: newOrder.id };
+}
+
+// Google Gemini AI chat endpoint
 app.post('/api/chat', async (req, res) => {
-  const { message, history } = req.body;
+  const { message, history, tableId } = req.body;
   
   // Construct menu text context for Gemini
   const menuContext = dbState.menu
@@ -182,7 +291,8 @@ Guidelines:
 2. If asked for a recommendation, recommend actual dishes from our menu listed above. Speak highly of our Chef's specials like Truffle Tagliatelle or Signature Lumière Burger.
 3. Be concise and keep formatting neat. Use emoji icons to make recommendations appetizing!
 4. Always speak in first-person as a representative of the restaurant (e.g., "We offer...", "Our chef recommends...").
-5. Do NOT make up menu items. Only recommend items from our actual list.`;
+5. Do NOT make up menu items. Only recommend items from our actual list.
+6. Important: If the customer asks to order items, buy them, or add them to their bill, invoke the "placeOrder" tool/function. Make sure you extract the correct menu names and quantities.`;
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -201,19 +311,33 @@ Guidelines:
       reply = `To satisfy your sweet tooth, I highly recommend our **Lava Delice** 🍫 (USD 9.50) served warm with vanilla bean gelato. It is the perfect way to finish your meal!`;
     } else if (userMsg.includes('drink') || userMsg.includes('beverage') || userMsg.includes('spark')) {
       reply = `We offer refreshing beverages! You must try our **Indigo Spark** cocktail 🍸 (USD 12.00) which has blueberries, premium gin, and fresh lime juice!`;
+    } else if (userMsg.includes('order') || userMsg.includes('buy') || userMsg.includes('add')) {
+      // Mock order placement trigger
+      const orderResult = executePlaceOrder([{ name: 'Signature Lumière Burger', quantity: 1 }], tableId || 'table-1');
+      if (orderResult.success) {
+        reply = `🍽️ **Mock Order Placed!**\n\nI have placed an order for **1x Signature Lumière Burger** on your table since no API key is configured. You can see it preparing now!`;
+        res.json({ reply, orderPlaced: true });
+      } else {
+        reply = `Could not place order: ${orderResult.error}`;
+        res.json({ reply });
+      }
+      return;
     } else {
       reply = `That sounds delightful! If you're looking for recommendations, our Chef's favorites are the creamy **Truffle Tagliatelle** or **Signature Lumière Burger** served warm. Let me know if you have any dietary restrictions or need drink pairings! 🍹`;
     }
     
     setTimeout(() => {
       res.json({ reply });
-    }, 800); // Simulate network delay
+    }, 800);
     return;
   }
 
   try {
     const ai = new GoogleGenerativeAI(apiKey);
-    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = ai.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      tools: [{ functionDeclarations: [placeOrderDeclaration] }]
+    });
     
     const contents = history.map((h: any) => ({
       role: h.role === 'assistant' ? 'model' : 'user',
@@ -225,9 +349,34 @@ Guidelines:
       parts: [{ text: `${systemPrompt}\n\nUser request: ${message}` }]
     });
 
-    const response = await model.generateContent({ contents });
-    const reply = response.text || "I apologize, but I'm having trouble processing that request right now. How else can I assist you with our menu?";
-    res.json({ reply });
+    const result = await model.generateContent({ contents });
+    const response = result.response;
+    
+    const replyText = typeof response.text === 'function' ? response.text() : ((response as any).text || '');
+    const functionCalls = typeof response.functionCalls === 'function' ? response.functionCalls() : ((response as any).functionCalls || []);
+
+    if (functionCalls && functionCalls.length > 0) {
+      const call = functionCalls[0];
+      if (call.name === 'placeOrder') {
+        const args = call.args as any;
+        const targetTable = args.tableId || tableId || 'table-1';
+        const orderResult = executePlaceOrder(args.items, targetTable);
+        
+        if (orderResult.success) {
+          res.json({
+            reply: `🍽️ **Order Placed via AI!**\n\nI have successfully placed the order for:\n${args.items.map((i: any) => `• ${i.quantity}x **${i.name}**`).join('\n')}\non your table! It has been sent directly to the kitchen.`,
+            orderPlaced: true
+          });
+        } else {
+          res.json({
+            reply: `⚠️ I tried to place the order, but encountered an issue: ${orderResult.error}. Please confirm the dish names and table scanning!`
+          });
+        }
+        return;
+      }
+    }
+
+    res.json({ reply: replyText || "I apologize, but I'm having trouble processing that request right now. How else can I assist you with our menu?" });
   } catch (error: any) {
     console.error('Gemini AI API Error:', error);
     res.status(500).json({ error: 'Failed to generate dining recommendation.' });
