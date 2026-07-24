@@ -125,9 +125,13 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
   // Generate Table QR Code printable
   useEffect(() => {
     if (qrPrintTable && printQrCanvasRef.current) {
-      const origin = window.location.origin;
-      // Routing URL that customer scans: https://domain.app/?restaurantId=shiv-resto&tableId=table-1
-      const tableUrl = `${origin}/?restaurantId=shiv-resto&tableId=${qrPrintTable.id}`;
+      let origin = window.location.origin;
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        // Fallback to live production Vercel deployment so mobile scans work during local testing
+        origin = 'https://shiv-hotel-demo.vercel.app';
+      }
+      // Routing URL that customer scans: https://domain.app/?restaurantId=lumiere-dining&tableId=table-1
+      const tableUrl = `${origin}/?restaurantId=lumiere-dining&tableId=${qrPrintTable.id}`;
       
       QRCode.toCanvas(printQrCanvasRef.current, tableUrl, {
         width: 260,
