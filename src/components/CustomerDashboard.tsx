@@ -325,8 +325,8 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
           name: c.menuItem.name,
           price: c.menuItem.price,
           quantity: c.quantity,
-          notes: c.notes,
-          customizations: c.selectedCustomizations
+          notes: c.notes || '',
+          customizations: c.selectedCustomizations || []
         })),
         subtotal: cartSubtotal,
         tax: serviceFee,
@@ -334,7 +334,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
         grandTotal: cartGrandTotal,
         status: 'PLACED',
         timestamp: Date.now(),
-        customerPhone: activeCustomer?.phone
+        customerPhone: activeCustomer?.phone || ''
       };
 
       // Loyalty points calculations
