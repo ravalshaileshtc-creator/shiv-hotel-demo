@@ -400,6 +400,7 @@ export const updateState = async (partialState: Partial<DBState>) => {
       }
     } catch (e) {
       console.error('Firebase save failed:', e);
+      throw e;
     }
   } else {
     // SSE Mode - post update to Express server

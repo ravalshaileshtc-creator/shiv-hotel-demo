@@ -315,62 +315,67 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   const placeOrder = async () => {
     if (cart.length === 0 || !scannedTableId) return;
 
-    const newOrder: Order = {
-      id: `ord-${Date.now()}`,
-      restaurantId,
-      tableId: scannedTableId,
-      items: cart.map(c => ({
-        menuItemId: c.menuItem.id,
-        name: c.menuItem.name,
-        price: c.menuItem.price,
-        quantity: c.quantity,
-        notes: c.notes,
-        customizations: c.selectedCustomizations
-      })),
-      subtotal: cartSubtotal,
-      tax: serviceFee,
-      discount: totalDiscount,
-      grandTotal: cartGrandTotal,
-      status: 'PLACED',
-      timestamp: Date.now(),
-      customerPhone: activeCustomer?.phone
-    };
+    try {
+      const newOrder: Order = {
+        id: `ord-${Date.now()}`,
+        restaurantId,
+        tableId: scannedTableId,
+        items: cart.map(c => ({
+          menuItemId: c.menuItem.id,
+          name: c.menuItem.name,
+          price: c.menuItem.price,
+          quantity: c.quantity,
+          notes: c.notes,
+          customizations: c.selectedCustomizations
+        })),
+        subtotal: cartSubtotal,
+        tax: serviceFee,
+        discount: totalDiscount,
+        grandTotal: cartGrandTotal,
+        status: 'PLACED',
+        timestamp: Date.now(),
+        customerPhone: activeCustomer?.phone
+      };
 
-    // Loyalty points calculations
-    if (activeCustomer) {
-      const updatedCustomers = customers.map(c => {
-        if (c.phone === activeCustomer.phone) {
-          let pts = c.points;
-          if (redeemPoints) {
-            pts -= maxRedeemablePoints;
+      // Loyalty points calculations
+      if (activeCustomer) {
+        const updatedCustomers = customers.map(c => {
+          if (c.phone === activeCustomer.phone) {
+            let pts = c.points;
+            if (redeemPoints) {
+              pts -= maxRedeemablePoints;
+            }
+            pts += Math.floor(cartSubtotal * 0.1);
+            return { ...c, points: pts };
           }
-          pts += Math.floor(cartSubtotal * 0.1);
-          return { ...c, points: pts };
-        }
-        return c;
-      });
-      await updateState({ customers: updatedCustomers });
-      setActiveCustomer(updatedCustomers.find(c => c.phone === activeCustomer.phone) || null);
-    }
-
-    const updatedOrders = [...orders, newOrder];
-    const updatedTables = tables.map(t => {
-      if (t.id === scannedTableId) {
-        return { ...t, status: 'occupied', activeOrderId: newOrder.id } as Table;
+          return c;
+        });
+        await updateState({ customers: updatedCustomers });
+        setActiveCustomer(updatedCustomers.find(c => c.phone === activeCustomer.phone) || null);
       }
-      return t;
-    });
 
-    await updateState({ orders: updatedOrders, tables: updatedTables });
-    setCart([]);
-    setRedeemPoints(false);
-    setActiveTab('status'); // transition to order status tracker!
+      const updatedOrders = [...orders, newOrder];
+      const updatedTables = tables.map(t => {
+        if (t.id === scannedTableId) {
+          return { ...t, status: 'occupied', activeOrderId: newOrder.id } as Table;
+        }
+        return t;
+      });
 
-    confetti({
-      particleCount: 150,
-      spread: 80,
-      origin: { y: 0.5 }
-    });
+      await updateState({ orders: updatedOrders, tables: updatedTables });
+      setCart([]);
+      setRedeemPoints(false);
+      setActiveTab('status'); // transition to order status tracker!
+
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+    } catch (e: any) {
+      console.error(e);
+      alert(`Firebase Sync Error: ${e.message || 'Permission denied or connection issue'}.\n\nPlease check if your Firestore Database is in "Test Mode" and allows reads/writes. Go to Firebase Console > Firestore > Rules and set: "allow read, write: if true;"`);
+    }
   };
 
   // Submit manual table scan input
