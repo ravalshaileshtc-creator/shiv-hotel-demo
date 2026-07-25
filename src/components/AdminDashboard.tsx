@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, saveFirebaseConfig, getActiveFirebaseConfig, getIsFirebaseMode, getAllRestaurantTenants, updateRestaurantTenant, getActiveRestaurantId, type RestaurantTenant } from '../services/db';
+import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, saveFirebaseConfig, getActiveFirebaseConfig, getIsFirebaseMode, getAllRestaurantTenants, updateRestaurantTenant, getActiveRestaurantId, type RestaurantTenant, saveUserDocument } from '../services/db';
 import { 
   TrendingUp, 
   ShoppingBag, 
@@ -937,12 +937,40 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
                         staffPassword: staffPassInput.value.trim() || 'staff123'
                       };
                       await updateRestaurantTenant(newTenant);
+                      
+                      // Create owner account globally in users collection
+                      await saveUserDocument({
+                        name: `${newTenant.name} Owner`,
+                        phone: newTenant.ownerPhone,
+                        password: newTenant.ownerPassword || 'owner123',
+                        role: 'owner',
+                        restaurantId: uniqueId
+                      });
+
+                      // Create cashier account globally in users collection
+                      await saveUserDocument({
+                        name: `${newTenant.name} Cashier`,
+                        phone: `${newTenant.ownerPhone}1`,
+                        password: newTenant.staffPassword || 'cashier123',
+                        role: 'cashier',
+                        restaurantId: uniqueId
+                      });
+
+                      // Create kitchen account globally in users collection
+                      await saveUserDocument({
+                        name: `${newTenant.name} Kitchen`,
+                        phone: `${newTenant.ownerPhone}2`,
+                        password: newTenant.staffPassword || 'kitchen123',
+                        role: 'kitchen',
+                        restaurantId: uniqueId
+                      });
+
                       nameInput.value = '';
                       phoneInput.value = '';
                       upiInput.value = '';
                       ownerPassInput.value = '';
                       staffPassInput.value = '';
-                      alert(`Restaurant Onboarded successfully! Tenant ID: ${uniqueId}`);
+                      alert(`Restaurant Onboarded successfully!\n\nTenant ID: ${uniqueId}\n\nLogin Credentials:\n1. Owner: ${newTenant.ownerPhone} / ${newTenant.ownerPassword || 'owner123'}\n2. Cashier: ${newTenant.ownerPhone}1 / ${newTenant.staffPassword || 'cashier123'}\n3. Kitchen: ${newTenant.ownerPhone}2 / ${newTenant.staffPassword || 'kitchen123'}`);
                       // Reload tenants list
                       const list = await getAllRestaurantTenants();
                       setTenants(list);

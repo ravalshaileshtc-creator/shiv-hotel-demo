@@ -106,7 +106,25 @@ export default function App() {
         restaurantId: generatedTenantId
       });
 
-      alert(`🎉 Congratulations! "${regName}" has been successfully registered.\n\nOwner Account Created:\n- Mobile: ${regPhone}\n- Password: owner123\n\nYou can now log in using these credentials!`);
+      // Create cashier account globally in users collection
+      await saveUserDocument({
+        name: `${regName} Cashier`,
+        phone: `${regPhone}1`,
+        password: 'cashier123',
+        role: 'cashier',
+        restaurantId: generatedTenantId
+      });
+
+      // Create kitchen account globally in users collection
+      await saveUserDocument({
+        name: `${regName} Kitchen`,
+        phone: `${regPhone}2`,
+        password: 'kitchen123',
+        role: 'kitchen',
+        restaurantId: generatedTenantId
+      });
+
+      alert(`🎉 Congratulations! "${regName}" has been successfully registered.\n\nLogin Accounts Created:\n\n1. 👨‍💼 OWNER:\n- Mobile: ${regPhone}\n- Password: owner123\n\n2. 💵 CASHIER:\n- Mobile: ${regPhone}1\n- Password: cashier123\n\n3. 🍳 KITCHEN:\n- Mobile: ${regPhone}2\n- Password: kitchen123\n\nYou can now log in using these credentials!`);
       
       // Reset
       setIsRegisterOpen(false);
