@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type Order, type Table, subscribeToState, updateState } from '../services/db';
+import { type Order, type Table, subscribeToState, updateState, getActiveRestaurantId, getAllRestaurantTenants } from '../services/db';
 import { 
   Volume2, 
   VolumeX, 
@@ -14,6 +14,8 @@ import {
 export default function KDS() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
+  const [settings, setSettings] = useState<any>(null);
+  const [tenants, setTenants] = useState<any[]>([]);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const seenOrdersRef = useRef<Set<string>>(new Set());
 
@@ -22,7 +24,13 @@ export default function KDS() {
     const unsubscribe = subscribeToState((state) => {
       setOrders(state.orders);
       setTables(state.tables);
+      setSettings(state.settings);
     });
+
+    getAllRestaurantTenants().then(list => {
+      setTenants(list);
+    }).catch(e => console.error(e));
+
     return unsubscribe;
   }, []);
 
@@ -209,13 +217,31 @@ export default function KDS() {
         <div className="flex items-center gap-3">
           <ChefHat className="w-8 h-8 text-primary-500" />
           <div>
-            <h1 className="text-xl font-black tracking-wide text-white">Lumière Dining Kitchen</h1>
+            <h1 className="text-xl font-black tracking-wide text-white">
+              {settings?.restaurantName || 'Restaurant'} Kitchen
+            </h1>
             <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Kitchen Display System (KDS)</p>
           </div>
         </div>
         
         <div className="flex items-center gap-4">
-          <span className="text-xs bg-slate-700 px-3 py-1.5 rounded-xl font-bold flex items-center gap-2">
+          {tenants.length > 0 && (
+            <select
+              value={getActiveRestaurantId()}
+              onChange={(e) => {
+                localStorage.setItem('saas_restaurant_id', e.target.value);
+                window.location.search = `?restaurantId=${e.target.value}`;
+              }}
+              className="bg-slate-700 border border-slate-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              {tenants.map(t => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          )}
+          <span className="text-xs bg-slate-700 px-3 py-1.5 rounded-xl font-bold flex items-center gap-2 text-white">
             <span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block animate-pulse"></span>
             Live Connection
           </span>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type Table, type Order, type Settings, subscribeToState, updateState } from '../services/db';
+import { type Table, type Order, type Settings, subscribeToState, updateState, getActiveRestaurantId, getAllRestaurantTenants } from '../services/db';
 import { 
   Printer, 
   Check, 
@@ -34,12 +34,19 @@ export default function CashierTerminal() {
   const upiQrCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Subscribe to DB state
+  const [tenants, setTenants] = useState<any[]>([]);
+
   useEffect(() => {
     const unsubscribe = subscribeToState((state) => {
       setTables(state.tables);
       setOrders(state.orders);
       setSettings(state.settings);
     });
+    
+    getAllRestaurantTenants().then(list => {
+      setTenants(list);
+    }).catch(e => console.error(e));
+
     return unsubscribe;
   }, []);
 
@@ -164,9 +171,30 @@ export default function CashierTerminal() {
         <div className="flex items-center gap-3">
           <LayoutGrid className="w-8 h-8 text-primary-500" />
           <div>
-            <h1 className="text-xl font-bold text-gray-900 leading-tight">Shiv POS Terminal</h1>
+            <h1 className="text-xl font-bold text-gray-900 leading-tight">
+              {settings?.restaurantName || 'Restaurant'} POS Terminal
+            </h1>
             <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Billing & Floor Manager</p>
           </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {tenants.length > 0 && (
+            <select
+              value={getActiveRestaurantId()}
+              onChange={(e) => {
+                localStorage.setItem('saas_restaurant_id', e.target.value);
+                window.location.search = `?restaurantId=${e.target.value}`;
+              }}
+              className="bg-gray-100 border border-gray-200 text-gray-800 text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              {tenants.map(t => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </header>
 
