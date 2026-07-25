@@ -861,7 +861,23 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
                               {t.status}
                             </span>
                           </td>
-                          <td className="py-3.5 text-right">
+                          <td className="py-3.5 text-right flex items-center justify-end gap-2">
+                            <a
+                              href={`/?restaurantId=${t.id}&tableId=table-1`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-[10px] inline-block"
+                            >
+                              Customer Menu
+                            </a>
+                            <a
+                              href={`/owner?restaurantId=${t.id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-2.5 py-1.5 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 font-bold text-[10px] inline-block"
+                            >
+                              Owner Panel
+                            </a>
                             <button
                               onClick={() => handleToggleTenantStatus(t)}
                               className={`px-3 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-colors ${
