@@ -381,11 +381,14 @@ const setupFirestoreSubscriptions = () => {
   // 1. Menu Snapshot
   onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'menu'), (snapshot) => {
     if (snapshot.empty) {
-      // Auto-populate menu
-      localState.menu.forEach(item => {
-        setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'menu', item.id), item);
-      });
-      loadedData.menu = localState.menu;
+      if (activeRestaurantId === 'lumiere-dining') {
+        localState.menu.forEach(item => {
+          setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'menu', item.id), item);
+        });
+        loadedData.menu = localState.menu;
+      } else {
+        loadedData.menu = [];
+      }
     } else {
       loadedData.menu = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as MenuItem));
     }
@@ -395,11 +398,14 @@ const setupFirestoreSubscriptions = () => {
   // 2. Tables Snapshot
   onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'tables'), (snapshot) => {
     if (snapshot.empty) {
-      // Auto-populate tables
-      localState.tables.forEach(table => {
-        setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'tables', table.id), table);
-      });
-      loadedData.tables = localState.tables;
+      if (activeRestaurantId === 'lumiere-dining') {
+        localState.tables.forEach(table => {
+          setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'tables', table.id), table);
+        });
+        loadedData.tables = localState.tables;
+      } else {
+        loadedData.tables = [];
+      }
     } else {
       loadedData.tables = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Table));
     }
@@ -415,10 +421,14 @@ const setupFirestoreSubscriptions = () => {
   // 4. Customers Snapshot
   onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'customers'), (snapshot) => {
     if (snapshot.empty) {
-      localState.customers.forEach(c => {
-        setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'customers', c.phone), c);
-      });
-      loadedData.customers = localState.customers;
+      if (activeRestaurantId === 'lumiere-dining') {
+        localState.customers.forEach(c => {
+          setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'customers', c.phone), c);
+        });
+        loadedData.customers = localState.customers;
+      } else {
+        loadedData.customers = [];
+      }
     } else {
       loadedData.customers = snapshot.docs.map(d => ({ phone: d.id, ...d.data() } as Customer));
     }
@@ -429,11 +439,22 @@ const setupFirestoreSubscriptions = () => {
   onSnapshot(doc(firestoreDb, 'restaurants', activeRestaurantId, 'settings', 'main'), (snapshot) => {
     if (snapshot.exists()) {
       loadedData.settings = snapshot.data() as Settings;
+      checkAndEmit();
     } else {
-      loadedData.settings = localState.settings;
-      setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'settings', 'main'), localState.settings);
+      getRestaurantTenant(activeRestaurantId).then(tenant => {
+        const initialSettings: Settings = {
+          restaurantName: tenant ? tenant.name : 'New Restaurant',
+          upiId: tenant ? tenant.upiId : 'default@upi',
+          address: '',
+          logoUrl: '',
+          taxPercentage: 5,
+          currencySymbol: '₹'
+        };
+        setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'settings', 'main'), initialSettings);
+        loadedData.settings = initialSettings;
+        checkAndEmit();
+      });
     }
-    checkAndEmit();
   });
 };
 
