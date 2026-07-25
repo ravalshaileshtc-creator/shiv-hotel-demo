@@ -160,19 +160,7 @@ export default function App() {
     }
   };
 
-  const handleDemoLogin = () => {
-    const sessionData: UserSession = {
-      name: 'Demo Admin',
-      phone: '9999999999',
-      role: 'super_admin',
-      restaurantId: 'lumiere-dining'
-    };
-    localStorage.setItem('saas_user_session', JSON.stringify(sessionData));
-    localStorage.setItem('saas_restaurant_id', 'lumiere-dining');
-    initSync();
-    setUserSession(sessionData);
-    navigateTo('/admin');
-  };
+
 
   // Parse path and search parameters
   useEffect(() => {
@@ -278,13 +266,6 @@ export default function App() {
           </div>
 
           <div className="border-t border-slate-850 pt-5 flex flex-col gap-3">
-            <button
-              onClick={handleDemoLogin}
-              className="w-full bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-350 font-bold py-3.5 px-4 rounded-2xl text-xs cursor-pointer transition-colors uppercase tracking-widest"
-            >
-              🚀 Try Live Demo (Guest Mode)
-            </button>
-
             <button
               onClick={() => setIsRegisterOpen(true)}
               className="text-xs text-primary-450 hover:text-primary-300 font-bold transition-colors uppercase tracking-wider text-center"

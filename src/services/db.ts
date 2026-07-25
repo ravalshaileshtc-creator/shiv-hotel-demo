@@ -250,36 +250,14 @@ export const getAllRestaurantTenants = async (): Promise<RestaurantTenant[]> => 
   if (isFirebaseMode && firestoreDb) {
     try {
       const snap = await getDocs(collection(firestoreDb, 'restaurants'));
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as RestaurantTenant));
-      if (list.length === 0) {
-        const defaultTenant: RestaurantTenant = {
-          id: 'lumiere-dining',
-          name: 'Lumière Dining',
-          ownerPhone: '9876543210',
-          status: 'ACTIVE',
-          subscriptionExpiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
-          upiId: 'lumiere@upi'
-        };
-        await setDoc(doc(firestoreDb, 'restaurants', 'lumiere-dining'), defaultTenant);
-        return [defaultTenant];
-      }
-      return list;
+      return snap.docs.map(d => ({ id: d.id, ...d.data() } as RestaurantTenant));
     } catch (e) {
       console.error('Failed to get tenants:', e);
       throw e;
     }
   }
   // Local mock list
-  return [
-    {
-      id: 'lumiere-dining',
-      name: 'Lumière Dining',
-      ownerPhone: '9876543210',
-      status: 'ACTIVE',
-      subscriptionExpiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
-      upiId: 'lumiere@upi'
-    }
-  ];
+  return [];
 };
 
 export const updateRestaurantTenant = async (tenant: RestaurantTenant) => {

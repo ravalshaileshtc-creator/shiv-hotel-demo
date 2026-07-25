@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, saveFirebaseConfig, getActiveFirebaseConfig, getIsFirebaseMode, getAllRestaurantTenants, updateRestaurantTenant, type RestaurantTenant, getActiveRestaurantId, getRestaurantTenant } from '../services/db';
+import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, saveFirebaseConfig, getActiveFirebaseConfig, getIsFirebaseMode, getAllRestaurantTenants, updateRestaurantTenant, getActiveRestaurantId, type RestaurantTenant } from '../services/db';
 import { 
   TrendingUp, 
   ShoppingBag, 
@@ -24,38 +24,6 @@ interface AdminDashboardProps {
 }
 
 export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardProps) {
-  const activeRestaurantId = getActiveRestaurantId();
-  const [tenant, setTenant] = useState<RestaurantTenant | null>(null);
-  const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
-  const [passwordInput, setPasswordInput] = useState<string>('');
-  const [authError, setAuthError] = useState<string>('');
-
-  // Load tenant and verify session auth for Owner
-  useEffect(() => {
-    if (activeRestaurantId === 'lumiere-dining' || role === 'super_admin') {
-      setIsAuthorized(true);
-      return;
-    }
-    
-    getRestaurantTenant(activeRestaurantId).then((t: RestaurantTenant | null) => {
-      setTenant(t);
-      const savedAuth = sessionStorage.getItem(`auth_${role}_${activeRestaurantId}`);
-      const correctPassword = t?.ownerPassword || 'owner123';
-      if (savedAuth === correctPassword) {
-        setIsAuthorized(true);
-      }
-    }).catch((err: any) => console.error(err));
-  }, [activeRestaurantId, role]);
-
-  const handleAuthSubmit = () => {
-    const correctPassword = tenant?.ownerPassword || 'owner123';
-    if (passwordInput === correctPassword) {
-      sessionStorage.setItem(`auth_${role}_${activeRestaurantId}`, passwordInput);
-      setIsAuthorized(true);
-    } else {
-      setAuthError('Incorrect Owner Password!');
-    }
-  };
 
   // DB States
   const [menu, setMenu] = useState<MenuItem[]>([]);
@@ -354,64 +322,6 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
     setIsFirebaseConnected(false);
     alert('Disconnected from Firebase. Reverted to Server SSE database sync.');
   };
-
-  if (!isAuthorized && activeRestaurantId !== 'lumiere-dining') {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6 relative overflow-hidden font-sans">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary-600/10 blur-[100px] pointer-events-none"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-amber-500/10 blur-[100px] pointer-events-none"></div>
-
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative z-10 flex flex-col gap-6">
-          <div className="text-center">
-            <h1 className="text-2xl font-black text-white tracking-tight leading-none font-display">
-              {tenant?.name || 'Restaurant Portal'}
-            </h1>
-            <p className="text-xs text-slate-400 mt-2 font-semibold uppercase tracking-wider">
-              Owner Security Login
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">
-                Owner Password
-              </label>
-              <input
-                type="password"
-                placeholder="Enter Owner Password"
-                value={passwordInput}
-                onChange={e => setPasswordInput(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') handleAuthSubmit();
-                }}
-                className="w-full bg-slate-950 border border-slate-850 focus:border-primary-500 rounded-2xl px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none transition-all text-center tracking-widest font-black"
-              />
-            </div>
-
-            {authError && (
-              <p className="text-xs text-red-500 text-center font-bold">{authError}</p>
-            )}
-
-            <button
-              onClick={handleAuthSubmit}
-              className="bg-primary-500 hover:bg-primary-600 text-white font-bold py-3.5 px-4 rounded-2xl text-xs cursor-pointer shadow-md shadow-primary-500/10 transition-colors uppercase tracking-widest font-sans"
-            >
-              Verify & Enter
-            </button>
-          </div>
-          
-          <div className="text-center border-t border-slate-850 pt-4">
-            <a 
-              href="/"
-              className="text-[10px] text-slate-500 hover:text-slate-400 font-bold uppercase tracking-wider transition-colors"
-            >
-              Back to System Hub
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12 font-sans select-none flex flex-col">
