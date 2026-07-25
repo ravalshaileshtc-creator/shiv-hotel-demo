@@ -430,11 +430,23 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
         </div>
 
         {/* Sync Status Badge */}
-        <div className="flex items-center gap-2 bg-slate-50 border border-gray-200 px-3.5 py-1.5 rounded-xl shrink-0">
-          <Database className={`w-4 h-4 ${isFirebaseConnected ? 'text-green-600 animate-pulse' : 'text-primary-500'}`} />
-          <span className="text-[11px] font-bold text-gray-700">
-            Sync: {isFirebaseConnected ? 'Firebase Cloud' : 'Local SSE Server'}
-          </span>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 bg-slate-50 border border-gray-200 px-3.5 py-1.5 rounded-xl">
+            <Database className={`w-4 h-4 ${isFirebaseConnected ? 'text-green-600 animate-pulse' : 'text-primary-500'}`} />
+            <span className="text-[11px] font-bold text-gray-700">
+              Sync: {isFirebaseConnected ? 'Firebase Cloud' : 'Local SSE Server'}
+            </span>
+          </div>
+
+          <button 
+            onClick={() => {
+              localStorage.removeItem('saas_user_session');
+              window.location.href = '/';
+            }}
+            className="text-xs bg-red-50 hover:bg-red-100 text-red-500 font-bold px-3 py-1.5 rounded-xl cursor-pointer transition-colors border border-red-200"
+          >
+            Logout
+          </button>
         </div>
       </header>
 

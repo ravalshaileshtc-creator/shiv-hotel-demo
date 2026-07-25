@@ -19,6 +19,17 @@ export default function KDS() {
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string>('');
 
+  const isSuperAdmin = (() => {
+    const saved = localStorage.getItem('saas_user_session');
+    if (!saved) return false;
+    try {
+      const parsed = JSON.parse(saved);
+      return parsed.role === 'super_admin';
+    } catch {
+      return false;
+    }
+  })();
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
   const [settings, setSettings] = useState<any>(null);
@@ -317,7 +328,7 @@ export default function KDS() {
         </div>
         
         <div className="flex items-center gap-4">
-          {tenants.length > 0 && (
+          {isSuperAdmin && tenants.length > 0 && (
             <select
               value={getActiveRestaurantId()}
               onChange={(e) => {
@@ -344,6 +355,15 @@ export default function KDS() {
             }`}
           >
             {audioEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+          </button>
+          <button 
+            onClick={() => {
+              localStorage.removeItem('saas_user_session');
+              window.location.href = '/';
+            }}
+            className="text-xs bg-red-600/20 hover:bg-red-650/40 text-red-400 font-extrabold px-3 py-2 rounded-xl cursor-pointer transition-colors border border-red-500/20"
+          >
+            Logout
           </button>
         </div>
       </header>

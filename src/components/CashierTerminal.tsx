@@ -40,6 +40,17 @@ export default function CashierTerminal() {
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string>('');
 
+  const isSuperAdmin = (() => {
+    const saved = localStorage.getItem('saas_user_session');
+    if (!saved) return false;
+    try {
+      const parsed = JSON.parse(saved);
+      return parsed.role === 'super_admin';
+    } catch {
+      return false;
+    }
+  })();
+
   // Subscribe to DB state
   const [tenants, setTenants] = useState<any[]>([]);
 
@@ -271,7 +282,7 @@ export default function CashierTerminal() {
         </div>
 
         <div className="flex items-center gap-4">
-          {tenants.length > 0 && (
+          {isSuperAdmin && tenants.length > 0 && (
             <select
               value={getActiveRestaurantId()}
               onChange={(e) => {
@@ -287,6 +298,15 @@ export default function CashierTerminal() {
               ))}
             </select>
           )}
+          <button 
+            onClick={() => {
+              localStorage.removeItem('saas_user_session');
+              window.location.href = '/';
+            }}
+            className="text-xs bg-red-50 hover:bg-red-100 text-red-500 font-bold px-3 py-1.5 rounded-xl cursor-pointer transition-colors border border-red-200"
+          >
+            Logout
+          </button>
         </div>
       </header>
 
