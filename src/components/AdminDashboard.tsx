@@ -760,6 +760,72 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
           {/* SAAS TENANTS TAB */}
           {activeTab === 'tenants' && (
             <div className="flex flex-col gap-6">
+              {/* Manual Onboarding Form */}
+              <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-gray-800 border-b border-gray-100 pb-3">Onboard New Restaurant (Manual Setup)</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Restaurant Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. My Spice Resto"
+                      id="new-tenant-name"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Owner Contact Phone</label>
+                    <input
+                      type="tel"
+                      placeholder="e.g. 9876543210"
+                      id="new-tenant-phone"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Owner UPI ID</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. owner@upi"
+                      id="new-tenant-upi"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    const nameInput = document.getElementById('new-tenant-name') as HTMLInputElement;
+                    const phoneInput = document.getElementById('new-tenant-phone') as HTMLInputElement;
+                    const upiInput = document.getElementById('new-tenant-upi') as HTMLInputElement;
+                    if (!nameInput.value.trim() || !phoneInput.value.trim()) {
+                      alert('Please provide restaurant name and contact phone.');
+                      return;
+                    }
+                    const tenantId = nameInput.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                    const uniqueId = `${tenantId}-${Date.now().toString().slice(-4)}`;
+                    const newTenant: RestaurantTenant = {
+                      id: uniqueId,
+                      name: nameInput.value.trim(),
+                      ownerPhone: phoneInput.value.trim(),
+                      status: 'ACTIVE',
+                      subscriptionExpiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+                      upiId: upiInput.value.trim() || 'default@upi'
+                    };
+                    await updateRestaurantTenant(newTenant);
+                    nameInput.value = '';
+                    phoneInput.value = '';
+                    upiInput.value = '';
+                    alert(`Restaurant Onboarded successfully! Tenant ID: ${uniqueId}`);
+                    // Reload tenants list
+                    const list = await getAllRestaurantTenants();
+                    setTenants(list);
+                  }}
+                  className="bg-primary-500 hover:bg-primary-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs cursor-pointer shadow-md shadow-primary-500/10 self-start"
+                >
+                  Onboard Restaurant
+                </button>
+              </div>
+
               <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
                 <h2 className="text-base font-extrabold text-gray-900 mb-4">SaaS Platform Tenants</h2>
                 
