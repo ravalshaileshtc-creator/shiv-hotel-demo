@@ -158,8 +158,9 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
         // Fallback to live production Vercel deployment so mobile scans work during local testing
         origin = 'https://shiv-hotel-demo.vercel.app';
       }
-      // Routing URL that customer scans: https://domain.app/?restaurantId=lumiere-dining&tableId=table-1
-      const tableUrl = `${origin}/?restaurantId=lumiere-dining&tableId=${qrPrintTable.id}`;
+      // Routing URL that customer scans: https://domain.app/?restaurantId={activeRestId}&tableId=table-1
+      const activeRestId = getActiveRestaurantId();
+      const tableUrl = `${origin}/?restaurantId=${activeRestId}&tableId=${qrPrintTable.id}`;
       
       QRCode.toCanvas(printQrCanvasRef.current, tableUrl, {
         width: 260,
