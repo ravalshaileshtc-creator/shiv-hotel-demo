@@ -501,15 +501,23 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
       <header className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-[30px] border-b border-white/40 shadow-[0px_20px_20px_0px_rgba(0,0,0,0.05)]">
         <div className="flex justify-between items-center px-6 h-16 w-full max-w-md mx-auto">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary-100 overflow-hidden border border-primary-500/20">
-              <img 
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHnMsw_eR2dHpBvL1uqNasUfWQ7FUCxT_a3dM0kPUWdquxX_hSYN8eo8K0xONvHETHXuJCZSuu2zvAcJqfB52Er9d4IulS6PHjz1zEkdg5hbsJWkoeLs1fPxtQ5wjXRiKWQAR-fCbtsk6NphJrGCcep5ZjWkoJElGaPgRYcWam24i9cm_1iu_vOD8NgFoXzSX30vhE3uyHDI4eUAC9ri8O_RNnHL8mUpxEetrSQMusJFeZKoJPbvMW6qj9WIJ8ak0Kw3RzsrzW8II" 
-                alt="Profile" 
-                className="w-full h-full object-cover" 
-              />
+            <div className="w-8 h-8 rounded-full bg-primary-100 overflow-hidden border border-primary-500/20 flex items-center justify-center">
+              {settings.logoUrl ? (
+                <img 
+                  src={settings.logoUrl} 
+                  alt={settings.restaurantName} 
+                  className="w-full h-full object-cover" 
+                />
+              ) : (
+                <span className="text-primary-600 font-black text-sm uppercase">
+                  {settings.restaurantName ? settings.restaurantName.charAt(0) : 'R'}
+                </span>
+              )}
             </div>
             <div>
-              <h1 className="font-extrabold text-base text-primary-500 tracking-tight leading-none">Lumière Dining</h1>
+              <h1 className="font-extrabold text-base text-primary-500 tracking-tight leading-none">
+                {settings.restaurantName || 'Restaurant'}
+              </h1>
               <span className="text-[9px] font-bold text-primary-600 mt-0.5 block">
                 {activeTable ? activeTable.name : 'Table Guest'}
               </span>
