@@ -77,99 +77,105 @@ export interface DBState {
   customers: Customer[];
 }
 
-// Initial/default structure
+// Initial mock constants for demo restaurant
+const MOCK_MENU: MenuItem[] = [
+  {
+    id: 'm1',
+    name: 'Black Truffle Fries',
+    description: 'Crispy artisanal fries seasoned with shaved parmesan and fresh herbs.',
+    price: 14.00,
+    category: 'Starters',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBHbia6SqFBy1JYdhlpiwoxutpL6ATkzeMr4e_LMgT05sH_riMmEmnXFM_lQ1zVjl453dM90gXyaWFik8_8Ra5B9kq_Xd1quvP01tL899bI7cph91GfHkj1ThOkkHUWL8dw0efTh1brp0JqbjQ31E8VMKOPYfGLbXQ8wqavHFxef7762CMSRqURMO2qLtLcRzBDKcK4N2RQ1Qi92sh45dI3woV0F-HZBl6ohprwZiyT7TDxwJcex-oHOJTkeg73CN4ZJwh7ZcrpiKA',
+    isVeg: true,
+    isAvailable: true,
+    customizations: ['Extra Aioli', 'Less Salt']
+  },
+  {
+    id: 'm2',
+    name: 'Shrimp Caesar',
+    description: 'Grilled jumbo prawns served over crisp Caesar greens with herb croutons.',
+    price: 16.00,
+    category: 'Starters',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBdEhCXEl3ireawq8ITqPMdHoQqxtJi3TX4q6cq2JcU23gbatiDH63aH59LVH0PEvNLE58sH_Iuh6I3q5Zp92tz0Tq_8SncMcLPhDssf8dpzPYGVVFcXo7J61O9L0hvndmfmsgDLX_MLnjVUixSIkvvNg9xqTfbBx9IdMctiLgQQfAeQr7eDoNL2-mPMU5ShbshKiJ6V5hWSRsyifp1uqq0ooiCJtrE2VFt5Ts6O5mMNeZv2TQd6K4lbt_J5j1yL7QwXjV3MHAMVwQ',
+    isVeg: false,
+    isAvailable: true,
+    customizations: ['Extra Dressing', 'No Croutons']
+  },
+  {
+    id: 'm3',
+    name: 'Signature Lumière Burger',
+    description: 'Truffle-infused wagyu beef patty with aged gruyère and caramelized onions on a brioche bun.',
+    price: 24.00,
+    category: 'Mains',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDLLK3ojOPF3rE3CpyG02w_LDVFNpzoiFmiFSoSj7i6YcgOWp3JPDcDJLbSCPrRBhdqecc8KXsCvbku6NuIb4otc-0n2S-LlRb_GMvgO1aRfSuQorKABaCSNyEMCM1XBGeYqL5f6DnfJtEHV7BWbeulpJ70lgRaDNwAKr-LBzT5qFYj6W8HokxGKcsX_z-zjqogdEREYIfdvk-45yjVTIfXLOmn5EWC7QNGqpYEsKhBeoR7phMTqkETVIuL9YIN5HfXSJXxLN2fc88',
+    isVeg: false,
+    isAvailable: true,
+    customizations: ['Medium Rare', 'Well Done', 'No Gruyere']
+  },
+  {
+    id: 'm4',
+    name: 'Truffle Tagliatelle',
+    description: 'Tagliatelle pasta tossed with wild mushrooms and a rich white truffle cream sauce.',
+    price: 18.50,
+    category: 'Mains',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDiJPeYIuqBUl5CzH7xOmWZnWiLO3VgvwxOyd_3R4hB4oUyeY24HTImtIQMr-CmoyQmRzbdpqGbCUcbdJuDOYp4DaeZd-advsDS8YY6qwsxLBXirLluobCyPniK8lzElo2v90fyKi1N0dicR7jADgf9Ht2XCc_fdgjgJgOqnUwZ8iFWTTxpK2TbtUzXbftfdSEnogZtv9Ib69utZ_FAV9_nsjEAVOgUsOMVMHgaQMUhbBWOhyfAmEHIgKBFhVTj15TGqv3-qpSWKMI',
+    isVeg: true,
+    isAvailable: true,
+    customizations: ['Extra Parmesan', 'Gluten Free']
+  },
+  {
+    id: 'm5',
+    name: 'Lava Delice',
+    description: 'Molten chocolate lava cake made with 70% cacao, served with vanilla bean gelato.',
+    price: 9.50,
+    category: 'Desserts',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD41dgPpwdknAuYHMET2-dCXUEWeMfS-qxxCsimDhEr5AHF1p5hRCIwzlU_k1m-87MW0vTHR196JwW9OCErp17Dga9Su_NK2OyBOKMApBAdaiJTb5wTtjQY8qkgf7Hl3TfxozUtiGRCN7qxFxVr73heeMSBXbPolXyWf64PHDec3TRlUBFt0Qvi8E20J07dZKUY4k5H41ODi8xE1wTkhHPVAuHsnZvlPbm_P4qHtKMkJvLPpUyfz4MhhYXJGJx3cqXLT_xYZlobGo8',
+    isVeg: true,
+    isAvailable: true,
+    customizations: ['Extra Gelato']
+  },
+  {
+    id: 'm6',
+    name: 'Indigo Spark',
+    description: 'A refreshing craft cocktail of blueberry, premium gin, and fresh lime juice.',
+    price: 12.00,
+    category: 'Beverages',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDNGU9x1EEv_D9XEPf8KlYHTl_tnKyYvYecmWNM8b_WvcFSHrC9yu04GWWhIkJ-uZWjPHWfnOMP0Xe5LYxR18mo3ItqsUO5j-Jaa2Up_s8_YZgTZ4ccjEQTWmfXxtjt1Mt4WIsxIMpf5zn66D8o6R_iHeqe2dL2hEr_nxGW_csftMCT5Wc3DEMJes0E5ofnHc0nJnhk2gDRIcOUHSyCplGtkAFtZqfTuOYR51MJGIMnalZQx_-dbkcVMQKLCgwrMzV5RCTSh0Ofc28',
+    isVeg: true,
+    isAvailable: true,
+    customizations: ['Sweet', 'Less Gin', 'Extra Lime']
+  }
+];
+
+const MOCK_TABLES: Table[] = [
+  { id: 'table-1', name: 'Table 1', capacity: 2, status: 'vacant', activeOrderId: null },
+  { id: 'table-2', name: 'Table 2', capacity: 4, status: 'vacant', activeOrderId: null },
+  { id: 'table-3', name: 'Table 3', capacity: 4, status: 'vacant', activeOrderId: null },
+  { id: 'table-4', name: 'Table 4', capacity: 6, status: 'vacant', activeOrderId: null },
+  { id: 'table-5', name: 'Table 5', capacity: 2, status: 'vacant', activeOrderId: null },
+  { id: 'table-6', name: 'Table 6', capacity: 4, status: 'vacant', activeOrderId: null },
+  { id: 'table-7', name: 'Table 7', capacity: 8, status: 'vacant', activeOrderId: null },
+  { id: 'table-8', name: 'Table 8', capacity: 4, status: 'vacant', activeOrderId: null }
+];
+
+const MOCK_CUSTOMERS: Customer[] = [
+  { phone: '9876543210', name: 'Arjun Sharma', points: 120 },
+  { phone: '9999999999', name: 'Demo Customer', points: 500 }
+];
+
 let localState: DBState = {
-  menu: [
-    {
-      id: 'm1',
-      name: 'Black Truffle Fries',
-      description: 'Crispy artisanal fries seasoned with shaved parmesan and fresh herbs.',
-      price: 14.00,
-      category: 'Starters',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBHbia6SqFBy1JYdhlpiwoxutpL6ATkzeMr4e_LMgT05sH_riMmEmnXFM_lQ1zVjl453dM90gXyaWFik8_8Ra5B9kq_Xd1quvP01tL899bI7cph91GfHkj1ThOkkHUWL8dw0efTh1brp0JqbjQ31E8VMKOPYfGLbXQ8wqavHFxef7762CMSRqURMO2qLtLcRzBDKcK4N2RQ1Qi92sh45dI3woV0F-HZBl6ohprwZiyT7TDxwJcex-oHOJTkeg73CN4ZJwh7ZcrpiKA',
-      isVeg: true,
-      isAvailable: true,
-      customizations: ['Extra Aioli', 'Less Salt']
-    },
-    {
-      id: 'm2',
-      name: 'Shrimp Caesar',
-      description: 'Grilled jumbo prawns served over crisp Caesar greens with herb croutons.',
-      price: 16.00,
-      category: 'Starters',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBdEhCXEl3ireawq8ITqPMdHoQqxtJi3TX4q6cq2JcU23gbatiDH63aH59LVH0PEvNLE58sH_Iuh6I3q5Zp92tz0Tq_8SncMcLPhDssf8dpzPYGVVFcXo7J61O9L0hvndmfmsgDLX_MLnjVUixSIkvvNg9xqTfbBx9IdMctiLgQQfAeQr7eDoNL2-mPMU5ShbshKiJ6V5hWSRsyifp1uqq0ooiCJtrE2VFt5Ts6O5mMNeZv2TQd6K4lbt_J5j1yL7QwXjV3MHAMVwQ',
-      isVeg: false,
-      isAvailable: true,
-      customizations: ['Extra Dressing', 'No Croutons']
-    },
-    {
-      id: 'm3',
-      name: 'Signature Lumière Burger',
-      description: 'Truffle-infused wagyu beef patty with aged gruyère and caramelized onions on a brioche bun.',
-      price: 24.00,
-      category: 'Mains',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDLLK3ojOPF3rE3CpyG02w_LDVFNpzoiFmiFSoSj7i6YcgOWp3JPDcDJLbSCPrRBhdqecc8KXsCvbku6NuIb4otc-0n2S-LlRb_GMvgO1aRfSuQorKABaCSNyEMCM1XBGeYqL5f6DnfJtEHV7BWbeulpJ70lgRaDNwAKr-LBzT5qFYj6W8HokxGKcsX_z-zjqogdEREYIfdvk-45yjVTIfXLOmn5EWC7QNGqpYEsKhBeoR7phMTqkETVIuL9YIN5HfXSJXxLN2fc88',
-      isVeg: false,
-      isAvailable: true,
-      customizations: ['Medium Rare', 'Well Done', 'No Gruyere']
-    },
-    {
-      id: 'm4',
-      name: 'Truffle Tagliatelle',
-      description: 'Tagliatelle pasta tossed with wild mushrooms and a rich white truffle cream sauce.',
-      price: 18.50,
-      category: 'Mains',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDiJPeYIuqBUl5CzH7xOmWZnWiLO3VgvwxOyd_3R4hB4oUyeY24HTImtIQMr-CmoyQmRzbdpqGbCUcbdJuDOYp4DaeZd-advsDS8YY6qwsxLBXirLluobCyPniK8lzElo2v90fyKi1N0dicR7jADgf9Ht2XCc_fdgjgJgOqnUwZ8iFWTTxpK2TbtUzXbftfdSEnogZtv9Ib69utZ_FAV9_nsjEAVOgUsOMVMHgaQMUhbBWOhyfAmEHIgKBFhVTj15TGqv3-qpSWKMI',
-      isVeg: true,
-      isAvailable: true,
-      customizations: ['Extra Parmesan', 'Gluten Free']
-    },
-    {
-      id: 'm5',
-      name: 'Lava Delice',
-      description: 'Molten chocolate lava cake made with 70% cacao, served with vanilla bean gelato.',
-      price: 9.50,
-      category: 'Desserts',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD41dgPpwdknAuYHMET2-dCXUEWeMfS-qxxCsimDhEr5AHF1p5hRCIwzlU_k1m-87MW0vTHR196JwW9OCErp17Dga9Su_NK2OyBOKMApBAdaiJTb5wTtjQY8qkgf7Hl3TfxozUtiGRCN7qxFxVr73heeMSBXbPolXyWf64PHDec3TRlUBFt0Qvi8E20J07dZKUY4k5H41ODi8xE1wTkhHPVAuHsnZvlPbm_P4qHtKMkJvLPpUyfz4MhhYXJGJx3cqXLT_xYZlobGo8',
-      isVeg: true,
-      isAvailable: true,
-      customizations: ['Extra Gelato']
-    },
-    {
-      id: 'm6',
-      name: 'Indigo Spark',
-      description: 'A refreshing craft cocktail of blueberry, premium gin, and fresh lime juice.',
-      price: 12.00,
-      category: 'Beverages',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDNGU9x1EEv_D9XEPf8KlYHTl_tnKyYvYecmWNM8b_WvcFSHrC9yu04GWWhIkJ-uZWjPHWfnOMP0Xe5LYxR18mo3ItqsUO5j-Jaa2Up_s8_YZgTZ4ccjEQTWmfXxtjt1Mt4WIsxIMpf5zn66D8o6R_iHeqe2dL2hEr_nxGW_csftMCT5Wc3DEMJes0E5ofnHc0nJnhk2gDRIcOUHSyCplGtkAFtZqfTuOYR51MJGIMnalZQx_-dbkcVMQKLCgwrMzV5RCTSh0Ofc28',
-      isVeg: true,
-      isAvailable: true,
-      customizations: ['Sweet', 'Less Gin', 'Extra Lime']
-    }
-  ],
-  tables: [
-    { id: 'table-1', name: 'Table 1', capacity: 2, status: 'vacant', activeOrderId: null },
-    { id: 'table-2', name: 'Table 2', capacity: 4, status: 'vacant', activeOrderId: null },
-    { id: 'table-3', name: 'Table 3', capacity: 4, status: 'vacant', activeOrderId: null },
-    { id: 'table-4', name: 'Table 4', capacity: 6, status: 'vacant', activeOrderId: null },
-    { id: 'table-5', name: 'Table 5', capacity: 2, status: 'vacant', activeOrderId: null },
-    { id: 'table-6', name: 'Table 6', capacity: 4, status: 'vacant', activeOrderId: null },
-    { id: 'table-7', name: 'Table 7', capacity: 8, status: 'vacant', activeOrderId: null },
-    { id: 'table-8', name: 'Table 8', capacity: 4, status: 'vacant', activeOrderId: null }
-  ],
+  menu: [],
+  tables: [],
   orders: [],
   settings: {
-    restaurantName: 'Lumière Dining',
-    upiId: 'lumiere@upi',
-    address: '404 Luxury Avenue, Suite 10, Gourmet Heights, USA',
-    logoUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=150',
-    taxPercentage: 10,
+    restaurantName: 'Restaurant',
+    upiId: '',
+    address: '',
+    logoUrl: '',
+    taxPercentage: 5,
     currencySymbol: '₹'
   },
-  customers: [
-    { phone: '9876543210', name: 'Arjun Sharma', points: 120 },
-    { phone: '9999999999', name: 'Demo Customer', points: 500 }
-  ]
+  customers: []
 };
 
 const getFirebaseConfig = () => {
@@ -345,6 +351,38 @@ export const initSync = () => {
   const config = getFirebaseConfig();
   getActiveRestaurantId(); // Resolve restaurant ID
   
+  if (activeRestaurantId === 'lumiere-dining') {
+    localState = {
+      menu: MOCK_MENU,
+      tables: MOCK_TABLES,
+      orders: [],
+      settings: {
+        restaurantName: 'Lumière Dining',
+        upiId: 'lumiere@upi',
+        address: '404 Luxury Avenue, Suite 10, Gourmet Heights, USA',
+        logoUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=150',
+        taxPercentage: 10,
+        currencySymbol: '₹'
+      },
+      customers: MOCK_CUSTOMERS
+    };
+  } else {
+    localState = {
+      menu: [],
+      tables: [],
+      orders: [],
+      settings: {
+        restaurantName: 'Restaurant',
+        upiId: '',
+        address: '',
+        logoUrl: '',
+        taxPercentage: 5,
+        currencySymbol: '₹'
+      },
+      customers: []
+    };
+  }
+  
   // Clean up existing connections
   if (eventSource) {
     eventSource.close();
@@ -427,10 +465,10 @@ const setupFirestoreSubscriptions = () => {
   onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'menu'), (snapshot) => {
     if (snapshot.empty) {
       if (activeRestaurantId === 'lumiere-dining') {
-        localState.menu.forEach(item => {
+        MOCK_MENU.forEach(item => {
           setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'menu', item.id), item);
         });
-        loadedData.menu = localState.menu;
+        loadedData.menu = MOCK_MENU;
       } else {
         loadedData.menu = [];
       }
@@ -444,10 +482,10 @@ const setupFirestoreSubscriptions = () => {
   onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'tables'), (snapshot) => {
     if (snapshot.empty) {
       if (activeRestaurantId === 'lumiere-dining') {
-        localState.tables.forEach(table => {
+        MOCK_TABLES.forEach(table => {
           setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'tables', table.id), table);
         });
-        loadedData.tables = localState.tables;
+        loadedData.tables = MOCK_TABLES;
       } else {
         loadedData.tables = [];
       }
@@ -467,10 +505,10 @@ const setupFirestoreSubscriptions = () => {
   onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'customers'), (snapshot) => {
     if (snapshot.empty) {
       if (activeRestaurantId === 'lumiere-dining') {
-        localState.customers.forEach(c => {
+        MOCK_CUSTOMERS.forEach(c => {
           setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'customers', c.phone), c);
         });
-        loadedData.customers = localState.customers;
+        loadedData.customers = MOCK_CUSTOMERS;
       } else {
         loadedData.customers = [];
       }
