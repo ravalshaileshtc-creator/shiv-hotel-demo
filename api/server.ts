@@ -119,7 +119,7 @@ let dbState = {
     address: '404 Luxury Avenue, Suite 10, Gourmet Heights, USA',
     logoUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=150',
     taxPercentage: 10,
-    currencySymbol: '$'
+    currencySymbol: '₹'
   },
   customers: [
     { phone: '9876543210', name: 'Arjun Sharma', points: 120 },

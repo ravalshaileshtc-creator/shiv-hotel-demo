@@ -214,7 +214,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
     address: '',
     logoUrl: '',
     taxPercentage: 10,
-    currencySymbol: '$'
+    currencySymbol: '₹'
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
 
