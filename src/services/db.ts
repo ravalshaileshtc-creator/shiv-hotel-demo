@@ -272,7 +272,10 @@ export const updateRestaurantTenant = async (tenant: RestaurantTenant) => {
       });
     } catch (e) {
       console.error('Failed to update tenant:', e);
+      throw e;
     }
+  } else {
+    throw new Error('Database is offline or not running in Firebase Mode.');
   }
 };
 

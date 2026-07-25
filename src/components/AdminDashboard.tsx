@@ -801,24 +801,29 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
                       alert('Please provide restaurant name and contact phone.');
                       return;
                     }
-                    const tenantId = nameInput.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                    const uniqueId = `${tenantId}-${Date.now().toString().slice(-4)}`;
-                    const newTenant: RestaurantTenant = {
-                      id: uniqueId,
-                      name: nameInput.value.trim(),
-                      ownerPhone: phoneInput.value.trim(),
-                      status: 'ACTIVE',
-                      subscriptionExpiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
-                      upiId: upiInput.value.trim() || 'default@upi'
-                    };
-                    await updateRestaurantTenant(newTenant);
-                    nameInput.value = '';
-                    phoneInput.value = '';
-                    upiInput.value = '';
-                    alert(`Restaurant Onboarded successfully! Tenant ID: ${uniqueId}`);
-                    // Reload tenants list
-                    const list = await getAllRestaurantTenants();
-                    setTenants(list);
+                    try {
+                      const tenantId = nameInput.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                      const uniqueId = `${tenantId}-${Date.now().toString().slice(-4)}`;
+                      const newTenant: RestaurantTenant = {
+                        id: uniqueId,
+                        name: nameInput.value.trim(),
+                        ownerPhone: phoneInput.value.trim(),
+                        status: 'ACTIVE',
+                        subscriptionExpiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+                        upiId: upiInput.value.trim() || 'default@upi'
+                      };
+                      await updateRestaurantTenant(newTenant);
+                      nameInput.value = '';
+                      phoneInput.value = '';
+                      upiInput.value = '';
+                      alert(`Restaurant Onboarded successfully! Tenant ID: ${uniqueId}`);
+                      // Reload tenants list
+                      const list = await getAllRestaurantTenants();
+                      setTenants(list);
+                    } catch (err: any) {
+                      console.error(err);
+                      alert(`Failed to Onboard: ${err.message || 'Database write error'}`);
+                    }
                   }}
                   className="bg-primary-500 hover:bg-primary-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs cursor-pointer shadow-md shadow-primary-500/10 self-start"
                 >
