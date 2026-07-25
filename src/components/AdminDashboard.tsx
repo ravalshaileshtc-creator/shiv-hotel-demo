@@ -23,6 +23,43 @@ interface AdminDashboardProps {
   role?: 'owner' | 'super_admin';
 }
 
+// Helper to compress and resize uploaded images to lightweight Base64 strings (max 400px width/height, 70% quality)
+const compressImage = (file: File, maxWidth = 400, quality = 0.7): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(event.target?.result as string);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
+
 export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardProps) {
 
   // DB States
@@ -99,6 +136,31 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
   // QR Code Printable modal state
   const [qrPrintTable, setQrPrintTable] = useState<Table | null>(null);
   const printQrCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Direct Image upload handlers
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressImage(file, 400, 0.7);
+      setMenuFormImage(compressed);
+    } catch (err) {
+      console.error('Failed to compress image:', err);
+      alert('Error loading image file.');
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressImage(file, 300, 0.7);
+      setSettingsForm({ ...settingsForm, logoUrl: compressed });
+    } catch (err) {
+      console.error('Failed to compress logo:', err);
+      alert('Error loading logo file.');
+    }
+  };
 
   // Subscribe to DB state
   useEffect(() => {
@@ -676,13 +738,30 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Logo Image URL</label>
-                    <input
-                      type="text"
-                      value={settingsForm.logoUrl}
-                      onChange={e => setSettingsForm({ ...settingsForm, logoUrl: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
-                    />
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Logo Image URL / Direct Upload</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={settingsForm.logoUrl}
+                        onChange={e => setSettingsForm({ ...settingsForm, logoUrl: e.target.value })}
+                        className="flex-1 px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
+                      />
+                      <label className="bg-primary-50 hover:bg-primary-100 text-primary-600 font-bold px-3 py-2 rounded-xl text-xs cursor-pointer flex items-center justify-center shrink-0 border border-primary-200 transition-colors">
+                        Upload File
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                    {settingsForm.logoUrl && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <img src={settingsForm.logoUrl} className="w-10 h-10 object-cover rounded-lg border border-gray-200" alt="Logo Preview" />
+                        <span className="text-[10px] text-gray-500 italic font-semibold">Logo Preview</span>
+                      </div>
+                    )}
                   </div>
                   <div className="sm:col-span-2">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Restaurant Address</label>
@@ -1002,14 +1081,31 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
                 </div>
 
                 <div className="col-span-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Image URL</label>
-                  <input
-                    type="text"
-                    placeholder="https://unsplash.com/..."
-                    value={menuFormImage}
-                    onChange={e => setMenuFormImage(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
-                  />
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Image URL / Direct Upload</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="https://unsplash.com/..."
+                      value={menuFormImage}
+                      onChange={e => setMenuFormImage(e.target.value)}
+                      className="flex-1 px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
+                    />
+                    <label className="bg-primary-50 hover:bg-primary-100 text-primary-600 font-bold px-3 py-2 rounded-xl text-xs cursor-pointer flex items-center justify-center shrink-0 border border-primary-200 transition-colors">
+                      Upload File
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  {menuFormImage && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <img src={menuFormImage} className="w-10 h-10 object-cover rounded-lg border border-gray-200" alt="Preview" />
+                      <span className="text-[10px] text-gray-500 italic font-semibold">Image Preview</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="col-span-2">
