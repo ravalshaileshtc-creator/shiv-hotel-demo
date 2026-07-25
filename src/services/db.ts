@@ -214,6 +214,8 @@ export interface RestaurantTenant {
   status: 'ACTIVE' | 'PENDING_PAYMENT' | 'SUSPENDED';
   subscriptionExpiresAt: number;
   upiId: string;
+  ownerPassword?: string;
+  staffPassword?: string;
 }
 
 export const getRestaurantTenant = async (restaurantId: string): Promise<RestaurantTenant | null> => {
@@ -282,7 +284,9 @@ export const updateRestaurantTenant = async (tenant: RestaurantTenant) => {
         ownerPhone: tenant.ownerPhone,
         status: tenant.status,
         subscriptionExpiresAt: tenant.subscriptionExpiresAt,
-        upiId: tenant.upiId
+        upiId: tenant.upiId,
+        ownerPassword: tenant.ownerPassword || 'owner123',
+        staffPassword: tenant.staffPassword || 'staff123'
       });
     } catch (e) {
       console.error('Failed to update tenant:', e);
