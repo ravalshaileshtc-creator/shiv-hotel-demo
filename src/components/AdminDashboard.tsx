@@ -43,8 +43,12 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
 
   useEffect(() => {
     const loadTenants = async () => {
-      const tenantList = await getAllRestaurantTenants();
-      setTenants(tenantList);
+      try {
+        const tenantList = await getAllRestaurantTenants();
+        setTenants(tenantList);
+      } catch (err: any) {
+        console.error('Failed to load tenants:', err);
+      }
     };
     if (role === 'super_admin') {
       loadTenants();
@@ -52,11 +56,16 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
   }, [role]);
 
   const handleToggleTenantStatus = async (tenant: RestaurantTenant) => {
-    const newStatus = tenant.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
-    const updated = { ...tenant, status: newStatus as any };
-    await updateRestaurantTenant(updated);
-    const tenantList = await getAllRestaurantTenants();
-    setTenants(tenantList);
+    try {
+      const newStatus = tenant.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+      const updated = { ...tenant, status: newStatus as any };
+      await updateRestaurantTenant(updated);
+      const tenantList = await getAllRestaurantTenants();
+      setTenants(tenantList);
+    } catch (err: any) {
+      console.error(err);
+      alert(`Action failed: ${err.message || err}`);
+    }
   };
 
   // Menu Form States
