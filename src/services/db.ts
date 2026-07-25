@@ -297,6 +297,47 @@ export const updateRestaurantTenant = async (tenant: RestaurantTenant) => {
   }
 };
 
+export interface UserDocument {
+  name: string;
+  phone: string;
+  password: string;
+  role: 'owner' | 'cashier' | 'kitchen' | 'waiter' | 'super_admin';
+  restaurantId: string;
+}
+
+export const getUserDocument = async (phone: string): Promise<UserDocument | null> => {
+  if (isFirebaseMode && firestoreDb) {
+    try {
+      const snap = await getDoc(doc(firestoreDb, 'users', phone));
+      if (snap.exists()) {
+        return { phone: snap.id, ...snap.data() } as UserDocument;
+      }
+    } catch (e) {
+      console.error('Failed to get user:', e);
+    }
+  }
+  return null;
+};
+
+export const saveUserDocument = async (user: UserDocument) => {
+  if (isFirebaseMode && firestoreDb) {
+    try {
+      await setDoc(doc(firestoreDb, 'users', user.phone), {
+        name: user.name,
+        password: user.password,
+        role: user.role,
+        restaurantId: user.restaurantId
+      });
+    } catch (e) {
+      console.error('Failed to save user:', e);
+      throw e;
+    }
+  } else {
+    throw new Error('Database is offline or not running in Firebase Mode.');
+  }
+};
+
+
 const subscribers = new Set<(state: DBState) => void>();
 
 // Initialize connection
