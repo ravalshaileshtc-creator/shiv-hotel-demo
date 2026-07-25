@@ -536,3 +536,6 @@ export const getActiveFirebaseConfig = () => {
 export const getIsFirebaseMode = () => {
   return isFirebaseMode;
 };
+
+// Auto-initialize sync immediately on module load
+initSync();
