@@ -36,95 +36,7 @@ interface CartItem {
   notes: string;
 }
 
-// Dynamically injects Three.js script and renders a rotating 3D burger model matching the mockup
-const ThreeBurger = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!containerRef.current) return;
-    
-    let active = true;
-    let cleanup: (() => void) | undefined;
-
-    const runThree = () => {
-      const THREE = (window as any).THREE;
-      if (!THREE || !containerRef.current || !active) return;
-
-      const container = containerRef.current;
-      const width = container.clientWidth || 180;
-      const height = container.clientHeight || 180;
-      
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-      renderer.setSize(width, height);
-      container.appendChild(renderer.domElement);
-
-      const burger = new THREE.Group();
-      const bunMat = new THREE.MeshPhongMaterial({ color: 0xD2B48C, shininess: 12 });
-      const meatMat = new THREE.MeshPhongMaterial({ color: 0x5D4037, shininess: 5 });
-      const lettuceMat = new THREE.MeshPhongMaterial({ color: 0x4CAF50, shininess: 5 });
-
-      const bottomBun = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.3, 32), bunMat);
-      burger.add(bottomBun);
-
-      const patty = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.2, 32), meatMat);
-      patty.position.y = 0.3;
-      burger.add(patty);
-
-      const lettuce = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.1, 32), lettuceMat);
-      lettuce.position.y = 0.45;
-      burger.add(lettuce);
-
-      const topBun = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2), bunMat);
-      topBun.position.y = 0.5;
-      burger.add(topBun);
-
-      scene.add(burger);
-      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-      const light = new THREE.DirectionalLight(0xffffff, 0.6);
-      light.position.set(2, 5, 3);
-      scene.add(light);
-
-      camera.position.set(1.5, 1.5, 3.2);
-      camera.lookAt(0, 0.2, 0);
-
-      let reqId: number;
-      const animate = () => {
-        reqId = requestAnimationFrame(animate);
-        burger.rotation.y += 0.01;
-        burger.position.y = Math.sin(Date.now() * 0.001) * 0.08;
-        renderer.render(scene, camera);
-      };
-      animate();
-
-      cleanup = () => {
-        cancelAnimationFrame(reqId);
-        if (container.contains(renderer.domElement)) {
-          container.removeChild(renderer.domElement);
-        }
-      };
-    };
-
-    if (!(window as any).THREE) {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
-      script.onload = () => {
-        if (active) runThree();
-      };
-      document.head.appendChild(script);
-    } else {
-      runThree();
-    }
-
-    return () => {
-      active = false;
-      if (cleanup) cleanup();
-    };
-  }, []);
-
-  return <div ref={containerRef} className="w-full h-full" />;
-};
 
 const translations = {
   en: {
@@ -157,7 +69,8 @@ const translations = {
     redeemPoints: "Redeem Points",
     applyPromo: "Promo Applied",
     tableGuest: "Table Guest",
-    cartEmpty: "Your cart is empty 🥣"
+    cartEmpty: "Your cart is empty 🥣",
+    todaysSpecial: "Today's Special"
   },
   hi: {
     menu: "मेनू",
@@ -189,7 +102,8 @@ const translations = {
     redeemPoints: "पॉइंट्स का उपयोग करें",
     applyPromo: "प्रोमो कोड लागू हुआ",
     tableGuest: "टेबल अतिथि",
-    cartEmpty: "आपकी कार्ट अभी खाली है 🥣"
+    cartEmpty: "आपकी कार्ट अभी खाली है 🥣",
+    todaysSpecial: "आज का विशेष"
   }
 };
 
@@ -673,32 +587,50 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
               </div>
             </section>
 
-            {/* Featured Card with 3D Animation */}
-            {selectedCategory === 'All' && (
-              <section>
-                <div className="glass-card rounded-[24px] overflow-hidden relative shadow-[0px_20px_20px_0px_rgba(0,0,0,0.05)] h-60 flex items-center justify-between px-6 group transition-all duration-300 hover:scale-[1.01]">
-                  <div className="z-10 w-1/2">
-                    <span className="bg-primary-100 text-primary-600 px-3 py-1 rounded-full text-[10px] font-bold mb-2.5 inline-block uppercase tracking-wider">
-                      Featured
-                    </span>
-                    <h2 className="text-base font-extrabold text-primary-500 mb-1.5 leading-tight">
-                      Signature Burger
-                    </h2>
-                    <p className="text-[#546067] text-[11px] leading-relaxed line-clamp-2">
-                      Truffle-infused wagyu beef with aged gruyère.
-                    </p>
-                    <p className="text-primary-600 font-extrabold text-sm mt-2">
-                      {settings.currencySymbol}24.00
-                    </p>
+            {/* Today's Special Card with Real Image */}
+            {selectedCategory === 'All' && filteredMenu.length > 0 && (() => {
+              const featuredItem = filteredMenu.find(item => item.price > 100) || filteredMenu[0];
+              return (
+                <section className="mb-6">
+                  <div className="glass-card rounded-[24px] overflow-hidden relative shadow-[0px_20px_20px_0px_rgba(0,0,0,0.05)] min-h-[160px] flex items-center justify-between p-5 group transition-all duration-300 hover:scale-[1.01]">
+                    <div className="z-10 w-[55%]">
+                      <span className="bg-primary-500/10 text-primary-600 px-3 py-1 rounded-full text-[9px] font-bold mb-2.5 inline-block uppercase tracking-wider">
+                        {t.todaysSpecial}
+                      </span>
+                      <h2 className="text-base font-extrabold text-slate-800 mb-1.5 leading-tight">
+                        {featuredItem.name}
+                      </h2>
+                      <p className="text-[#546067] text-[10px] leading-relaxed line-clamp-2 mb-3">
+                        {featuredItem.description}
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <span className="text-primary-500 font-extrabold text-sm">
+                          {settings.currencySymbol}{featuredItem.price.toFixed(2)}
+                        </span>
+                        <button 
+                          onClick={() => openCustomizationModal(featuredItem)}
+                          className="bg-primary-500 hover:bg-primary-600 text-white font-bold text-[9px] uppercase tracking-wider px-3.5 py-1.5 rounded-full transition-colors flex items-center gap-1 shadow-md shadow-primary-500/10 cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" /> Add
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Real Image of the Item */}
+                    <div className="w-[40%] h-28 rounded-2xl overflow-hidden shadow-md border border-slate-100 shrink-0">
+                      <img 
+                        src={featuredItem.image} 
+                        alt={featuredItem.name} 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
+                        }}
+                      />
+                    </div>
                   </div>
-                  
-                  {/* Rotating 3D Three.js Burger */}
-                  <div className="absolute right-[-5%] w-1/2 h-full z-0 flex items-center justify-center">
-                    <ThreeBurger />
-                  </div>
-                </div>
-              </section>
-            )}
+                </section>
+              );
+            })()}
 
             {/* Menu Grid */}
             <section className="grid grid-cols-2 gap-4 pb-12">
