@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, saveFirebaseConfig, getActiveFirebaseConfig, getIsFirebaseMode, getAllRestaurantTenants, updateRestaurantTenant, getActiveRestaurantId, type RestaurantTenant, saveUserDocument } from '../services/db';
+import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, getIsFirebaseMode, getAllRestaurantTenants, updateRestaurantTenant, getActiveRestaurantId, type RestaurantTenant, saveUserDocument } from '../services/db';
 import { 
   TrendingUp, 
   ShoppingBag, 
@@ -11,7 +11,6 @@ import {
   Edit2, 
   Check, 
   X, 
-  Info,
   Database,
   QrCode,
   Users,
@@ -126,12 +125,7 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
   // Settings Form States
   const [settingsForm, setSettingsForm] = useState<Settings>({ ...settings });
 
-  // Firebase Config Form States
-  const [fbApiKey, setFbApiKey] = useState('');
-  const [fbProjectId, setFbProjectId] = useState('');
-  const [fbAuthDomain, setFbAuthDomain] = useState('');
-  const [fbAppId, setFbAppId] = useState('');
-  const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
+
 
   // QR Code Printable modal state
   const [qrPrintTable, setQrPrintTable] = useState<Table | null>(null);
@@ -172,23 +166,8 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
       setSettingsForm(state.settings);
     });
 
-    // Load active Firebase configs
-    const activeConfig = getActiveFirebaseConfig();
-    if (activeConfig) {
-      setFbApiKey(activeConfig.apiKey || '');
-      setFbProjectId(activeConfig.projectId || '');
-      setFbAuthDomain(activeConfig.authDomain || '');
-      setFbAppId(activeConfig.appId || '');
-    }
-    setIsFirebaseConnected(getIsFirebaseMode());
-
     return unsubscribe;
   }, []);
-
-  // Update Firebase status state
-  useEffect(() => {
-    setIsFirebaseConnected(getIsFirebaseMode());
-  }, [tables]); // refires checks on updates
 
   // Analytics calculations
   const settledOrders = orders.filter(o => o.status === 'COMPLETED');
@@ -360,30 +339,7 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
     alert('Restaurant settings updated successfully!');
   };
 
-  // FIREBASE CONFIG CONTEXTS
-  const handleConnectFirebase = () => {
-    if (!fbApiKey || !fbProjectId) {
-      alert('Please fill out API Key and Project ID fields.');
-      return;
-    }
-    const newConfig = {
-      apiKey: fbApiKey,
-      projectId: fbProjectId,
-      authDomain: fbAuthDomain || `${fbProjectId}.firebaseapp.com`,
-      appId: fbAppId
-    };
-    saveFirebaseConfig(newConfig);
-    setTimeout(() => {
-      setIsFirebaseConnected(getIsFirebaseMode());
-      alert(getIsFirebaseMode() ? 'Connected to Firebase Firestore successfully!' : 'Connection to Firebase failed. Local SSE sync remains enabled.');
-    }, 1000);
-  };
 
-  const handleDisconnectFirebase = () => {
-    saveFirebaseConfig(null);
-    setIsFirebaseConnected(false);
-    alert('Disconnected from Firebase. Reverted to Server SSE database sync.');
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12 font-sans select-none flex flex-col">
@@ -404,9 +360,9 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
         {/* Sync Status Badge */}
         <div className="flex items-center gap-3 shrink-0">
           <div className="flex items-center gap-2 bg-slate-50 border border-gray-200 px-3.5 py-1.5 rounded-xl">
-            <Database className={`w-4 h-4 ${isFirebaseConnected ? 'text-green-600 animate-pulse' : 'text-primary-500'}`} />
+            <Database className={`w-4 h-4 ${getIsFirebaseMode() ? 'text-green-600 animate-pulse' : 'text-primary-500'}`} />
             <span className="text-[11px] font-bold text-gray-700">
-              Sync: {isFirebaseConnected ? 'Firebase Cloud' : 'Local SSE Server'}
+              Sync: {getIsFirebaseMode() ? 'Firebase Cloud' : 'Local SSE Server'}
             </span>
           </div>
 
@@ -781,80 +737,7 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
                 </button>
               </div>
 
-              {/* Firebase Cloud Firestore connection form */}
-              <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex flex-col gap-4">
-                <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
-                  <Database className="w-5 h-5 text-primary-500" />
-                  <h3 className="text-sm font-bold text-gray-800">Firebase Firestore Integration</h3>
-                </div>
 
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-indigo-100 rounded-2xl p-4 flex gap-3 text-xs text-indigo-800 leading-relaxed shadow-sm">
-                  <Info className="w-4 h-4 shrink-0 text-indigo-600" />
-                  <p>
-                    Connecting Firebase Firestore enables real-time data sync across separate computers and smartphones globally. If disconnected, the system will use the default Express SSE server sync.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Firebase Project ID</label>
-                    <input
-                      type="text"
-                      placeholder="E.g. shiv-resto-pos"
-                      value={fbProjectId}
-                      onChange={e => setFbProjectId(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">API Key</label>
-                    <input
-                      type="password"
-                      placeholder="AIzaSy..."
-                      value={fbApiKey}
-                      onChange={e => setFbApiKey(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Auth Domain (Optional)</label>
-                    <input
-                      type="text"
-                      placeholder="E.g. shiv-resto-pos.firebaseapp.com"
-                      value={fbAuthDomain}
-                      onChange={e => setFbAuthDomain(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">App ID (Optional)</label>
-                    <input
-                      type="text"
-                      placeholder="E.g. 1:1234:web:abcd"
-                      value={fbAppId}
-                      onChange={e => setFbAppId(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-2">
-                  <button
-                    onClick={handleConnectFirebase}
-                    className="grow bg-primary-500 hover:bg-primary-600 text-white font-bold py-3 rounded-xl text-xs cursor-pointer shadow-md shadow-primary-500/10 flex items-center justify-center gap-1.5"
-                  >
-                    Connect Cloud Database
-                  </button>
-                  {isFirebaseConnected && (
-                    <button
-                      onClick={handleDisconnectFirebase}
-                      className="px-4 border border-red-200 hover:border-red-300 text-red-500 rounded-xl hover:bg-red-50 text-xs font-bold cursor-pointer"
-                    >
-                      Disconnect
-                    </button>
-                  )}
-                </div>
-              </div>
 
             </div>
           )}

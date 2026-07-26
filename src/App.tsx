@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { initSync, updateRestaurantTenant, type RestaurantTenant, getUserDocument, saveUserDocument } from './services/db';
+import { initSync, updateRestaurantTenant, type RestaurantTenant, getUserDocument, saveUserDocument, subscribeToState } from './services/db';
 import CustomerDashboard from './components/CustomerDashboard';
 import KDS from './components/KDS';
 import CashierTerminal from './components/CashierTerminal';
@@ -38,6 +38,18 @@ export default function App() {
     const saved = localStorage.getItem('saas_user_session');
     return saved ? JSON.parse(saved) : null;
   });
+
+  // Settings State for dynamic landing branding
+  const [settings, setSettings] = useState<any>(null);
+
+  useEffect(() => {
+    if (userSession) {
+      const unsubscribe = subscribeToState((state) => {
+        setSettings(state.settings);
+      });
+      return unsubscribe;
+    }
+  }, [userSession]);
 
   // Login States
   const [loginPhone, setLoginPhone] = useState('');
@@ -420,7 +432,7 @@ export default function App() {
             SaaS Terminal Hub
           </span>
           <h1 className="text-3xl sm:text-5xl font-black text-white mt-4 tracking-tight leading-none font-display">
-            Shiv Resto <span className="bg-gradient-to-r from-primary-500 to-amber-400 bg-clip-text text-transparent">POS & QR Ordering</span>
+            {settings?.restaurantName || 'Shiv Resto'} <span className="bg-gradient-to-r from-primary-500 to-amber-400 bg-clip-text text-transparent">POS & QR Ordering</span>
           </h1>
           <p className="text-sm text-slate-400 mt-2">
             Logged in as <strong className="text-slate-200">{userSession.name}</strong> ({userSession.role.toUpperCase()})
