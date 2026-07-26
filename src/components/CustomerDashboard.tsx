@@ -104,16 +104,127 @@ const translations = {
     tableGuest: "टेबल अतिथि",
     cartEmpty: "आपकी कार्ट अभी खाली है 🥣",
     todaysSpecial: "आज का विशेष"
+  },
+  gu: {
+    menu: "મેનૂ",
+    scan: "સ્કેન",
+    cart: "કાર્ટ",
+    status: "ઓર્ડર સ્થિતિ",
+    vegOnly: "ફક્ત શાકાહારી",
+    searchPlaceholder: "વાનગી, પીણાં, મીઠાઈ શોધો...",
+    addToCart: "કાર્ટમાં ઉમેરો",
+    checkout: "ચેકઆઉટ",
+    placeOrder: "ઓર્ડર કરો",
+    subtotal: "પેટા સરવાળો",
+    tax: "ટેક્સ",
+    discount: "ડિસ્કાઉન્ટ",
+    grandTotal: "કુલ ચૂકવવાપાત્ર",
+    orderPlaced: "ઓર્ડર સફળતાપૂર્વક થઈ ગયો છે",
+    orderStatusTimeline: "લાઈવ ઓર્ડર ટ્રેકિંગ",
+    placed: "ઓર્ડર થયો",
+    accepted: "સ્વીકારાયો",
+    preparing: "તૈયાર થાય છે",
+    ready: "તૈયાર છે",
+    completed: "પૂરો થયો",
+    welcome: "સ્વાગત છે",
+    scanTable: "ઓર્ડર કરવા માટે ટેબલ QR સ્કેન કરો",
+    aiChatbot: "AI ભોજન મદદગાર",
+    chatPlaceholder: "મેનૂ વિશે કંઈ પણ પૂછો...",
+    selectCustomization: "ઓર્ડર કસ્ટમાઇઝ કરો",
+    loyaltyPoints: "લોયલ્ટી પોઈન્ટ્સ",
+    redeemPoints: "પોઇન્ટ્સ વાપરો",
+    applyPromo: "પ્રોમો કોડ લાગુ થયો",
+    tableGuest: "ટેબલ મહેમાન",
+    cartEmpty: "તમારું કાર્ટ ખાલી છે 🥣",
+    todaysSpecial: "આજનું ખાસ"
   }
+};
+
+const CATEGORY_TRANSLATIONS: { [key: string]: string } = {
+  'Cold Beverages': 'ઠંડા પીણા',
+  'Mocktail': 'મોકટેલ્સ',
+  'Mocktails': 'મોકટેલ્સ',
+  'Starters': 'સ્ટાર્ટર્સ',
+  'Pizza': 'પિઝા',
+  'Soup': 'સૂપ',
+  'Salad & Papad': 'શાલાડ અને પાપડ',
+  'Main Course Paneer': 'મુખ્ય પનીર વાનગીઓ',
+  'Main Course Veg': 'મુખ્ય શાકાહારી વાનગીઓ',
+  'Rice': 'રાઇસ / ભાત',
+  'Indian Bread': 'રોટલી / રોટી',
+  'Desserts': 'મીઠાઈ / ડિઝર્ટ',
+  'Mains': 'મુખ્ય વાનગીઓ',
+  'Beverages': 'પીણાં'
+};
+
+const ITEM_TRANSLATIONS: { [key: string]: { name: string; desc?: string } } = {
+  'Fresh Lime Soda': { name: 'ફ્રેશ લાઈમ સોડા', desc: 'લીંબુ અને સોડા સાથે તાજગી આપતું પીણું' },
+  'Fresh Fruit Juice': { name: 'તાજા ફળોનો રસ', desc: 'મોસમી ફળોનો તાજો રસ' },
+  'Cold Coffee With Ice Cream': { name: 'કોલ્ડ કોફી વિથ આઈસ્ક્રીમ', desc: 'વેનીલા આઈસ્ક્રીમ સાથે ઠંડી કોફી' },
+  'Cold Coffee with Ice Cream': { name: 'કોલ્ડ કોફી વિથ આઈસ્ક્રીમ', desc: 'વેનીલા આઈસ્ક્રીમ સાથે ઠંડી કોફી' },
+  'Butter Milk': { name: 'છાશ', desc: 'મસાલેદાર ઠંડી છાશ' },
+  'Dry Fruit Lassi': { name: 'ડ્રાયફ્રૂટ લસ્સી', desc: 'કાજુ, બદામ અને પિસ્તા સાથે લસ્સી' },
+  'Lassi': { name: 'લસ્સી', desc: 'મીઠી દહીંની લસ્સી' },
+  'Milk Shake': { name: 'મિલ્ક શેક', desc: 'ટેસ્ટી મિલ્ક શેક' },
+  'Fruit Punch': { name: 'ફ્રૂટ પંચ', desc: 'મિક્સ ફળો સાથે મોકટેલ' },
+  'Pineapple Mint Cooler': { name: 'પાઈનેપલ મીન્ટ કુલર', desc: 'અનાનસ અને ફુદીના સાથે ઠંડુ પીણું' },
+  'Luxura Special Cooler': { name: 'લક્ઝુરા સ્પેશિયલ કુલર', desc: 'અમારું ખાસ સિગ્નેચર પીણું' },
+  'Blue Lagoon': { name: 'બ્લુ લગૂન', desc: 'બ્લુ ક્યુરાકાઓ ફ્લેવર્ડ મોકટેલ' },
+  'Green Goddess': { name: 'ગ્રીન ગોડ્ડેસ', desc: 'તાજી જડીબુટ્ટીઓ સાથે ઠંડુ પીણું' },
+  'Paneer Chilli Dry': { name: 'પનીર ચીલી ડ્રાય', desc: 'ચીલી સોસમાં સોફ્ટ પનીર સ્ટિર-ફ્રાઈડ' },
+  'Vegetable Pepper Salt': { name: 'વેજીટેબલ પેપર સોલ્ટ', desc: 'મરી અને મીઠા સાથે ક્રિસ્પી શાકભાજી' },
+  'Chilli Potato': { name: 'ચીલી પોટેટો', desc: 'તીખો અને મીઠો બટાકાનો નાસ્તો' },
+  'Mixed Tandoori Platter': { name: 'મિક્સ તંદૂરી પ્લેટર', desc: 'વિવિધ પ્રકારની તંદૂરી વાનગીઓનો સંગ્રહ' },
+  'Margherita Pizza': { name: 'માર્ગેરિટા પિઝા', desc: 'ચીઝ અને ટામેટા સોસ સાથે ક્લાસિક પિઝા' },
+  'Italian Pizza': { name: 'ઇટાલિયન પિઝા', desc: 'ઇટાલિયન સીઝનિંગ અને ટોપિંગ્સ સાથે પિઝા' },
+  'Mexican Pizza': { name: 'મેક્સિકન પિઝા', desc: 'તીખા સોસ અને કોર્ન સાથે મેક્સિકન સ્વાદ' },
+  'Luxura Special Pizza': { name: 'લક્ઝુરા સ્પેશિયલ પિઝા', desc: 'બધી શાકભાજી અને એક્સ્ટ્રા ચીઝ સાથે સ્પેશિયલ પિઝા' },
+  'Paneer Chilli Gravy': { name: 'પનીર ચીલી ગ્રેવી', desc: 'ગ્રેવી સાથે પનીર ચીલી' },
+  'Veg Manchurian Gravy': { name: 'વેજ મંચુરિયન ગ્રેવી', desc: 'ચાઈનીઝ ગ્રેવીમાં મંચુરિયન બોલ્સ' },
+  'Stir Fried Chinese Gravy': { name: 'સ્ટિર ફ્રાઈડ ચાઈનીઝ ગ્રેવી', desc: 'ચાઈનીઝ શૈલીની સ્વાદિષ્ટ ગ્રેવી' },
+  'Dal Fry': { name: 'દાળ ફ્રાય', desc: 'તડકા વાળી ટેસ્ટી પીળી દાળ' },
+  'Dal Fry + Tawa Roti Combo': { name: 'દાળ ફ્રાય + તવા રોટી કોમ્બો', desc: 'દાળ ફ્રાય અને ગરમ તવા રોટી' },
+  'Jeera Rice': { name: 'જીરા રાઇસ', desc: 'જીરા અને ઘી સાથે બનાવેલ બાસમતી ચોખા' },
+  'Steamed Rice': { name: 'સાદા ભાત', desc: 'ગરમાગરમ બાફેલા ચોખા' },
+  'Tandoori Roti': { name: 'તંદૂરી રોટી', desc: 'તંદૂરમાં શેકેલી રોટલી' },
+  'Butter Roti': { name: 'બટર રોટી', desc: 'માખણ વાળી ગરમ રોટલી' },
+  'Butter Naan': { name: 'બટર નાન', desc: 'માખણ વાળું સોફ્ટ નાન' },
+  'Garlic Naan': { name: 'ગાર્લિક નાન', desc: 'લસણ અને માખણ વાળું નાન' },
+  'Veg Pulao': { name: 'વેજ પુલાવ', desc: 'શાકભાજી સાથે બનાવેલ ચોખા' },
+  'Veg Biryani': { name: 'વેજ બિરયાની', desc: 'મસાલેદાર અને સુગંધિત બિરયાની' },
+  'Gulab Jamun': { name: 'ગુલાબ જામુન', desc: 'ગરમાગરમ સ્વાદિષ્ટ ગુલાબ જામુન' },
+  'Vanilla Ice Cream': { name: 'વેનીલા આઈસ્ક્રીમ', desc: 'ક્લાસિક વેનીલા ફ્લેવર' },
+  'Chocolate Brownie': { name: 'ચોકલેટ બ્રાઉની', desc: 'આઈસ્ક્રીમ સાથે ગરમ બ્રાઉની' }
+};
+
+const translateCategory = (cat: string, lang: 'en' | 'hi' | 'gu') => {
+  if (lang === 'gu') return CATEGORY_TRANSLATIONS[cat] || cat;
+  return cat;
+};
+
+const translateItemName = (item: MenuItem, lang: 'en' | 'hi' | 'gu') => {
+  if (lang === 'gu') {
+    if (item.nameGujarati?.trim()) return item.nameGujarati;
+    return ITEM_TRANSLATIONS[item.name]?.name || item.name;
+  }
+  return item.name;
+};
+
+const translateItemDesc = (item: MenuItem, lang: 'en' | 'hi' | 'gu') => {
+  if (lang === 'gu') {
+    if (item.descriptionGujarati?.trim()) return item.descriptionGujarati;
+    return ITEM_TRANSLATIONS[item.name]?.desc || item.description;
+  }
+  return item.description;
 };
 
 export default function CustomerDashboard({ restaurantId, tableId }: CustomerDashboardProps) {
   // Translation States
-  const [lang, setLang] = useState<'en' | 'hi'>((localStorage.getItem('app_lang') as any) || 'en');
-  const t = translations[lang];
+  const [lang, setLang] = useState<'en' | 'hi' | 'gu'>((localStorage.getItem('app_lang') as any) || 'en');
+  const t = (translations as any)[lang];
 
   const toggleLanguage = () => {
-    const nextLang = lang === 'en' ? 'hi' : 'en';
+    const nextLang = lang === 'en' ? 'hi' : lang === 'hi' ? 'gu' : 'en';
     setLang(nextLang);
     localStorage.setItem('app_lang', nextLang);
   };
@@ -528,7 +639,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
               onClick={toggleLanguage}
               className="text-[10px] font-extrabold text-primary-600 bg-primary-50 border border-primary-100 px-2.5 py-1 rounded-lg hover:bg-primary-100 transition-colors"
             >
-              {lang === 'en' ? 'हिंदी' : 'English'}
+              {lang === 'en' ? 'हिंदी' : lang === 'hi' ? 'ગુજરાતી' : 'English'}
             </button>
             <button 
               onClick={() => setActiveTab('scan')}
@@ -575,7 +686,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                             : 'glass-card text-[#546067]'
                         }`}
                       >
-                        {cat}
+                        {translateCategory(cat, lang)}
                       </button>
                     );
                   })}
@@ -650,7 +761,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                   <div className="h-28 w-full rounded-xl overflow-hidden mb-3.5 relative bg-slate-50 border border-slate-100">
                     <img 
                       src={item.image} 
-                      alt={item.name} 
+                      alt={translateItemName(item, lang)} 
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500';
@@ -665,8 +776,8 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
 
                   <div className="grow flex flex-col justify-between">
                     <div>
-                      <h3 className="font-extrabold text-xs text-slate-800 mb-0.5 leading-snug line-clamp-1">{item.name}</h3>
-                      <p className="text-[#546067] text-[10px] line-clamp-1 leading-normal mb-3">{item.description}</p>
+                      <h3 className="font-extrabold text-xs text-slate-800 mb-0.5 leading-snug line-clamp-1">{translateItemName(item, lang)}</h3>
+                      <p className="text-[#546067] text-[10px] line-clamp-1 leading-normal mb-3">{translateItemDesc(item, lang)}</p>
                     </div>
                     
                     <div className="flex justify-between items-center mt-auto">
@@ -862,12 +973,12 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                     className="glass-card p-4 rounded-3xl flex gap-3 shadow-[0px_20px_20px_0px_rgba(0,0,0,0.05)] border border-white/50"
                   >
                     <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-slate-100 bg-slate-50">
-                      <img src={item.menuItem.image} alt={item.menuItem.name} className="w-full h-full object-cover" />
+                      <img src={item.menuItem.image} alt={translateItemName(item.menuItem, lang)} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex flex-col justify-between grow">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h3 className="font-extrabold text-xs text-slate-800">{item.menuItem.name}</h3>
+                          <h3 className="font-extrabold text-xs text-slate-800">{translateItemName(item.menuItem, lang)}</h3>
                           {item.selectedCustomizations.length > 0 && (
                             <p className="text-[9px] text-[#546067] font-medium mt-0.5">{item.selectedCustomizations.join(', ')}</p>
                           )}
@@ -1117,7 +1228,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                   <div className="space-y-2 text-xs">
                     {activeOrder.items.map((item, idx) => (
                       <div key={idx} className="flex justify-between items-center">
-                        <span className="text-slate-700">{item.quantity}x {item.name}</span>
+                        <span className="text-slate-700">{item.quantity}x {lang === 'gu' ? (ITEM_TRANSLATIONS[item.name]?.name || item.name) : item.name}</span>
                         <span className="font-bold text-slate-800">{settings.currencySymbol}{(item.price * item.quantity).toFixed(2)}</span>
                       </div>
                     ))}
@@ -1217,7 +1328,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
               <div className="h-44 relative bg-gray-100">
                 <img 
                   src={selectedItem.image} 
-                  alt={selectedItem.name} 
+                  alt={translateItemName(selectedItem, lang)} 
                   className="w-full h-full object-cover" 
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500';
@@ -1237,9 +1348,9 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                     <span className={`w-3.5 h-3.5 border border-gray-400 rounded flex items-center justify-center shrink-0 bg-white`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${selectedItem.isVeg ? 'bg-green-600' : 'bg-red-600'}`}></span>
                     </span>
-                    <h2 className="text-base font-extrabold text-slate-800">{selectedItem.name}</h2>
+                    <h2 className="text-base font-extrabold text-slate-800">{translateItemName(selectedItem, lang)}</h2>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">{selectedItem.description}</p>
+                  <p className="text-xs text-gray-400 mt-1">{translateItemDesc(selectedItem, lang)}</p>
                 </div>
 
                 {selectedItem.customizations.length > 0 && (

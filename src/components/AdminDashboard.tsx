@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, getIsFirebaseMode, getAllRestaurantTenants, updateRestaurantTenant, getActiveRestaurantId, type RestaurantTenant, saveUserDocument } from '../services/db';
+import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, getIsFirebaseMode, getAllRestaurantTenants, updateRestaurantTenant, getActiveRestaurantId, type RestaurantTenant, saveUserDocument, deleteUserDocument, getRestaurantUsers } from '../services/db';
 import { 
   TrendingUp, 
   ShoppingBag, 
@@ -14,7 +14,9 @@ import {
   Database,
   QrCode,
   Users,
-  Printer
+  Printer,
+  LayoutGrid,
+  ChefHat
 } from 'lucide-react';
 import QRCode from 'qrcode';
 
@@ -60,6 +62,7 @@ const compressImage = (file: File, maxWidth = 400, quality = 0.7): Promise<strin
 };
 
 export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardProps) {
+  const activeRestaurantId = getActiveRestaurantId();
 
   // DB States
   const [menu, setMenu] = useState<MenuItem[]>([]);
@@ -75,8 +78,40 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
   });
 
   // UI Navigation
-  const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'tables' | 'settings' | 'tenants'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'tables' | 'settings' | 'tenants' | 'staff'>('analytics');
   const [tenants, setTenants] = useState<RestaurantTenant[]>([]);
+
+  // Staff Management States
+  const [cashierUser, setCashierUser] = useState<any>({ name: 'Cashier', phone: '', password: 'cashier123' });
+  const [originalCashierPhone, setOriginalCashierPhone] = useState('');
+  const [kitchenUser, setKitchenUser] = useState<any>({ name: 'Kitchen', phone: '', password: 'kitchen123' });
+  const [originalKitchenPhone, setOriginalKitchenPhone] = useState('');
+  const [isSavingStaff, setIsSavingStaff] = useState(false);
+
+  // Load Cashier and Kitchen accounts from global users collection
+  useEffect(() => {
+    if (activeRestaurantId && activeTab === 'staff') {
+      getRestaurantUsers(activeRestaurantId).then(users => {
+        const cash = users.find(u => u.role === 'cashier');
+        if (cash) {
+          setCashierUser({ name: cash.name, phone: cash.phone, password: cash.password });
+          setOriginalCashierPhone(cash.phone);
+        } else {
+          setCashierUser({ name: 'Cashier', phone: '', password: 'cashier123' });
+          setOriginalCashierPhone('');
+        }
+
+        const kit = users.find(u => u.role === 'kitchen');
+        if (kit) {
+          setKitchenUser({ name: kit.name, phone: kit.phone, password: kit.password });
+          setOriginalKitchenPhone(kit.phone);
+        } else {
+          setKitchenUser({ name: 'Kitchen', phone: '', password: 'kitchen123' });
+          setOriginalKitchenPhone('');
+        }
+      }).catch(err => console.error('Failed to load restaurant users:', err));
+    }
+  }, [activeRestaurantId, activeTab]);
 
   useEffect(() => {
     const loadTenants = async () => {
@@ -109,7 +144,9 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
   const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
   const [menuFormName, setMenuFormName] = useState('');
+  const [menuFormNameGujarati, setMenuFormNameGujarati] = useState('');
   const [menuFormDesc, setMenuFormDesc] = useState('');
+  const [menuFormDescGujarati, setMenuFormDescGujarati] = useState('');
   const [menuFormPrice, setMenuFormPrice] = useState(0);
   const [menuFormCategory, setMenuFormCategory] = useState('Starters');
   const [menuFormImage, setMenuFormImage] = useState('');
@@ -221,7 +258,9 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
   const openMenuAdd = () => {
     setEditingMenuItem(null);
     setMenuFormName('');
+    setMenuFormNameGujarati('');
     setMenuFormDesc('');
+    setMenuFormDescGujarati('');
     setMenuFormPrice(0);
     setMenuFormCategory('Starters');
     setMenuFormImage('');
@@ -235,7 +274,9 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
   const openMenuEdit = (item: MenuItem) => {
     setEditingMenuItem(item);
     setMenuFormName(item.name);
+    setMenuFormNameGujarati(item.nameGujarati || '');
     setMenuFormDesc(item.description);
+    setMenuFormDescGujarati(item.descriptionGujarati || '');
     setMenuFormPrice(item.price);
     setMenuFormCategory(item.category);
     setMenuFormImage(item.image);
@@ -277,7 +318,9 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
           return {
             ...m,
             name: menuFormName,
+            nameGujarati: menuFormNameGujarati,
             description: menuFormDesc,
+            descriptionGujarati: menuFormDescGujarati,
             price: menuFormPrice,
             category: menuFormCategory,
             image: imageFallback,
@@ -293,7 +336,9 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
       const newItem: MenuItem = {
         id: `m-${Date.now()}`,
         name: menuFormName,
+        nameGujarati: menuFormNameGujarati,
         description: menuFormDesc,
+        descriptionGujarati: menuFormDescGujarati,
         price: menuFormPrice,
         category: menuFormCategory,
         image: imageFallback,
@@ -344,6 +389,53 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
   const handleSaveSettings = async () => {
     await updateState({ settings: settingsForm });
     alert('Restaurant settings updated successfully!');
+  };
+
+  // STAFF SAVE
+  const handleSaveStaffAccounts = async () => {
+    if (!cashierUser.phone.trim() || !cashierUser.password.trim() || !kitchenUser.phone.trim() || !kitchenUser.password.trim()) {
+      alert('Please fill out all staff phone and password fields.');
+      return;
+    }
+    setIsSavingStaff(true);
+    try {
+      // 1. Delete old Cashier document if phone number changed
+      if (originalCashierPhone && originalCashierPhone !== cashierUser.phone.trim()) {
+        await deleteUserDocument(originalCashierPhone);
+      }
+      
+      // 2. Delete old Kitchen document if phone number changed
+      if (originalKitchenPhone && originalKitchenPhone !== kitchenUser.phone.trim()) {
+        await deleteUserDocument(originalKitchenPhone);
+      }
+
+      // 3. Save new Cashier document
+      await saveUserDocument({
+        name: cashierUser.name.trim() || 'Cashier',
+        phone: cashierUser.phone.trim(),
+        password: cashierUser.password.trim(),
+        role: 'cashier',
+        restaurantId: activeRestaurantId
+      });
+      setOriginalCashierPhone(cashierUser.phone.trim());
+
+      // 4. Save new Kitchen document
+      await saveUserDocument({
+        name: kitchenUser.name.trim() || 'Kitchen',
+        phone: kitchenUser.phone.trim(),
+        password: kitchenUser.password.trim(),
+        role: 'kitchen',
+        restaurantId: activeRestaurantId
+      });
+      setOriginalKitchenPhone(kitchenUser.phone.trim());
+
+      alert('Staff Terminal Credentials updated successfully!');
+    } catch (err: any) {
+      console.error(err);
+      alert(`Failed to save staff credentials: ${err.message || err}`);
+    } finally {
+      setIsSavingStaff(false);
+    }
   };
 
 
@@ -421,6 +513,16 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
           >
             General Settings
           </button>
+          {(role === 'owner' || role === 'super_admin') && (
+            <button
+              onClick={() => setActiveTab('staff')}
+              className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left cursor-pointer transition-colors ${
+                activeTab === 'staff' ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Staff & Terminals
+            </button>
+          )}
           {role === 'super_admin' && (
             <button
               onClick={() => setActiveTab('tenants')}
@@ -749,6 +851,120 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
             </div>
           )}
 
+          {/* STAFF MANAGEMENT TAB */}
+          {activeTab === 'staff' && (
+            <div className="flex flex-col gap-6">
+              <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col gap-5">
+                <div className="border-b border-gray-100 pb-3 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-800">Staff Terminal Credentials</h3>
+                    <p className="text-[11px] text-gray-400 mt-1">Configure active cashier and kitchen terminal logins for your restaurant</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+                  
+                  {/* Cashier Terminal */}
+                  <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 flex flex-col gap-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-gray-200/60">
+                      <div className="w-8 h-8 rounded-xl bg-primary-100 flex items-center justify-center text-primary-600">
+                        <LayoutGrid className="w-4 h-4" />
+                      </div>
+                      <h4 className="font-extrabold text-xs text-gray-800 uppercase tracking-wider">Cashier Terminal</h4>
+                    </div>
+
+                    <div className="flex flex-col gap-3.5">
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Cashier Name</label>
+                        <input
+                          type="text"
+                          value={cashierUser.name}
+                          onChange={e => setCashierUser({ ...cashierUser, name: e.target.value })}
+                          className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Login ID (Mobile Number)</label>
+                        <input
+                          type="tel"
+                          value={cashierUser.phone}
+                          onChange={e => setCashierUser({ ...cashierUser, phone: e.target.value })}
+                          className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Password</label>
+                        <input
+                          type="text"
+                          value={cashierUser.password}
+                          onChange={e => setCashierUser({ ...cashierUser, password: e.target.value })}
+                          className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Kitchen Display Terminal */}
+                  <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 flex flex-col gap-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-gray-200/60">
+                      <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
+                        <ChefHat className="w-4 h-4" />
+                      </div>
+                      <h4 className="font-extrabold text-xs text-gray-800 uppercase tracking-wider">Kitchen Display (KDS)</h4>
+                    </div>
+
+                    <div className="flex flex-col gap-3.5">
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Kitchen Operator Name</label>
+                        <input
+                          type="text"
+                          value={kitchenUser.name}
+                          onChange={e => setKitchenUser({ ...kitchenUser, name: e.target.value })}
+                          className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Login ID (Mobile Number)</label>
+                        <input
+                          type="tel"
+                          value={kitchenUser.phone}
+                          onChange={e => setKitchenUser({ ...kitchenUser, phone: e.target.value })}
+                          className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Password</label>
+                        <input
+                          type="text"
+                          value={kitchenUser.password}
+                          onChange={e => setKitchenUser({ ...kitchenUser, password: e.target.value })}
+                          className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <div className="flex justify-end gap-3 mt-4 border-t border-gray-100 pt-5">
+                  <button
+                    onClick={handleSaveStaffAccounts}
+                    disabled={isSavingStaff}
+                    className="bg-primary-500 hover:bg-primary-600 disabled:bg-gray-300 text-white font-bold py-3.5 px-6 rounded-xl text-xs cursor-pointer shadow-md shadow-primary-500/10 flex items-center gap-1.5 transition-colors"
+                  >
+                    {isSavingStaff ? (
+                      <>Saving...</>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" /> Save Staff Accounts
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* SAAS TENANTS TAB */}
           {activeTab === 'tenants' && (
             <div className="flex flex-col gap-6">
@@ -964,13 +1180,22 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
             {/* Modal Body */}
             <div className="p-5 overflow-y-auto grow flex flex-col gap-4 text-xs">
               <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Dish Name</label>
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Dish Name (English)</label>
                   <input
                     type="text"
                     value={menuFormName}
                     onChange={e => setMenuFormName(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
+                  />
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Dish Name (Gujarati / ગુજરાતી)</label>
+                  <input
+                    type="text"
+                    value={menuFormNameGujarati}
+                    onChange={e => setMenuFormNameGujarati(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs font-semibold text-gray-800"
                   />
                 </div>
 
@@ -1027,11 +1252,19 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
                 </div>
 
                 <div className="col-span-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Description</label>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Description (English)</label>
                   <textarea
                     value={menuFormDesc}
                     onChange={e => setMenuFormDesc(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs h-16 resize-none"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs h-12 resize-none"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Description (Gujarati / ગુજરાતી)</label>
+                  <textarea
+                    value={menuFormDescGujarati}
+                    onChange={e => setMenuFormDescGujarati(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs h-12 resize-none font-semibold text-gray-800"
                   />
                 </div>
 

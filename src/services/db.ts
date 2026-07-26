@@ -6,13 +6,16 @@ import {
   onSnapshot, 
   setDoc,
   getDoc,
-  getDocs
+  getDocs,
+  deleteDoc
 } from 'firebase/firestore';
 
 export interface MenuItem {
   id: string;
   name: string;
+  nameGujarati?: string;
   description: string;
+  descriptionGujarati?: string;
   price: number;
   category: string;
   image: string;
@@ -319,6 +322,31 @@ export const saveUserDocument = async (user: UserDocument) => {
   } else {
     throw new Error('Database is offline or not running in Firebase Mode.');
   }
+};
+
+export const deleteUserDocument = async (phone: string) => {
+  if (isFirebaseMode && firestoreDb) {
+    try {
+      await deleteDoc(doc(firestoreDb, 'users', phone));
+    } catch (e) {
+      console.error('Failed to delete user:', e);
+      throw e;
+    }
+  }
+};
+
+export const getRestaurantUsers = async (restaurantId: string): Promise<UserDocument[]> => {
+  if (isFirebaseMode && firestoreDb) {
+    try {
+      const snap = await getDocs(collection(firestoreDb, 'users'));
+      const list = snap.docs.map(d => ({ phone: d.id, ...d.data() } as UserDocument));
+      return list.filter(u => u.restaurantId === restaurantId);
+    } catch (e) {
+      console.error('Failed to get restaurant users:', e);
+      throw e;
+    }
+  }
+  return [];
 };
 
 
