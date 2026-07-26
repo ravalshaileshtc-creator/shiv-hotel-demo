@@ -51,6 +51,15 @@ export default function App() {
     }
   }, [userSession]);
 
+  // Dynamically set browser tab title
+  useEffect(() => {
+    if (settings?.restaurantName) {
+      document.title = `${settings.restaurantName} | POS Hub`;
+    } else {
+      document.title = 'Shiv POS & QR Dining';
+    }
+  }, [settings]);
+
   // Login States
   const [loginPhone, setLoginPhone] = useState('');
   const [loginPassword, setLoginPassword] = useState('');

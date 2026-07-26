@@ -310,6 +310,13 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
     return unsubscribe;
   }, []);
 
+  // Update browser tab title dynamically
+  useEffect(() => {
+    if (settings?.restaurantName) {
+      document.title = `${settings.restaurantName} | Digital Menu`;
+    }
+  }, [settings]);
+
   // Sync route param tableId
   useEffect(() => {
     if (tableId) {
