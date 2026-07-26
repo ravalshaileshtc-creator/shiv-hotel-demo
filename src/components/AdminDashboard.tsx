@@ -258,7 +258,14 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
   };
 
   const handleSaveMenuItem = async () => {
-    if (!menuFormName.trim() || menuFormPrice <= 0) return;
+    if (!menuFormName.trim()) {
+      alert('Please enter a dish name.');
+      return;
+    }
+    if (menuFormPrice < 0) {
+      alert('Price cannot be negative.');
+      return;
+    }
 
     let updatedMenu = [...menu];
     const imageFallback = menuFormImage.trim() || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500';
