@@ -520,6 +520,10 @@ const setupFirestoreSubscriptions = () => {
       loadedData.menu = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as MenuItem));
     }
     checkAndEmit();
+  }, (err) => {
+    console.error('Firestore Menu Snapshot Error:', err);
+    loadedData.menu = [];
+    checkAndEmit();
   });
 
   // 2. Tables Snapshot
@@ -537,11 +541,19 @@ const setupFirestoreSubscriptions = () => {
       loadedData.tables = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Table));
     }
     checkAndEmit();
+  }, (err) => {
+    console.error('Firestore Tables Snapshot Error:', err);
+    loadedData.tables = [];
+    checkAndEmit();
   });
 
   // 3. Orders Snapshot
   onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'orders'), (snapshot) => {
     loadedData.orders = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+    checkAndEmit();
+  }, (err) => {
+    console.error('Firestore Orders Snapshot Error:', err);
+    loadedData.orders = [];
     checkAndEmit();
   });
 
@@ -559,6 +571,10 @@ const setupFirestoreSubscriptions = () => {
     } else {
       loadedData.customers = snapshot.docs.map(d => ({ phone: d.id, ...d.data() } as Customer));
     }
+    checkAndEmit();
+  }, (err) => {
+    console.error('Firestore Customers Snapshot Error:', err);
+    loadedData.customers = [];
     checkAndEmit();
   });
 
@@ -580,8 +596,32 @@ const setupFirestoreSubscriptions = () => {
         setDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'settings', 'main'), initialSettings);
         loadedData.settings = initialSettings;
         checkAndEmit();
+      }).catch(err => {
+        console.error('Failed to get restaurant tenant details:', err);
+        const fallbackSettings: Settings = {
+          restaurantName: 'New Restaurant',
+          upiId: 'default@upi',
+          address: '',
+          logoUrl: '',
+          taxPercentage: 5,
+          currencySymbol: '₹'
+        };
+        loadedData.settings = fallbackSettings;
+        checkAndEmit();
       });
     }
+  }, (err) => {
+    console.error('Firestore Settings Snapshot Error:', err);
+    const fallbackSettings: Settings = {
+      restaurantName: 'New Restaurant',
+      upiId: 'default@upi',
+      address: '',
+      logoUrl: '',
+      taxPercentage: 5,
+      currencySymbol: '₹'
+    };
+    loadedData.settings = fallbackSettings;
+    checkAndEmit();
   });
 };
 

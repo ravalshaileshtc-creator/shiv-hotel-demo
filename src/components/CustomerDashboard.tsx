@@ -586,9 +586,10 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
         })
       });
       const data = await response.json();
-      setChatHistory(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      const replyMessage = data?.reply || (lang === 'gu' ? "ભોજન મદદગાર અસ્થાયી રૂપે અપ્રાપ્ય છે. ☕" : "Assistant temporarily unavailable. ☕");
+      setChatHistory(prev => [...prev, { role: 'assistant', content: replyMessage }]);
       
-      if (data.orderPlaced) {
+      if (data && data.orderPlaced) {
         setTimeout(() => {
           setIsChatOpen(false);
           setActiveTab('status');
@@ -596,7 +597,8 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
       }
     } catch (e) {
       console.error('Failed to chat:', e);
-      setChatHistory(prev => [...prev, { role: 'assistant', content: "I'm having a connection issue. Can you please repeat that? ☕" }]);
+      const fallbackMsg = lang === 'gu' ? "ભોજન મદદગાર અસ્થાયી રૂપે અપ્રાપ્ય છે. ☕" : "Assistant temporarily unavailable. ☕";
+      setChatHistory(prev => [...prev, { role: 'assistant', content: fallbackMsg }]);
     } finally {
       setIsAiTyping(false);
     }
