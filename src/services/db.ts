@@ -480,9 +480,21 @@ const setupSSESubscription = () => {
   };
 };
 
+let firestoreUnsubscribes: (() => void)[] = [];
+
 // Setup Firestore subscriptions for each collection (Tenant-isolated subcollections)
 const setupFirestoreSubscriptions = () => {
   if (!firestoreDb) return;
+
+  // Clear existing listeners
+  firestoreUnsubscribes.forEach(unsub => {
+    try {
+      unsub();
+    } catch (e) {
+      console.error('Failed to unsubscribe listener:', e);
+    }
+  });
+  firestoreUnsubscribes = [];
 
   const loadedData: Partial<DBState> = {};
   
@@ -506,7 +518,7 @@ const setupFirestoreSubscriptions = () => {
   };
 
   // 1. Menu Snapshot
-  onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'menu'), (snapshot) => {
+  const unsubMenu = onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'menu'), (snapshot) => {
     if (snapshot.empty) {
       if (activeRestaurantId === 'lumiere-dining') {
         MOCK_MENU.forEach(item => {
@@ -525,9 +537,10 @@ const setupFirestoreSubscriptions = () => {
     loadedData.menu = [];
     checkAndEmit();
   });
+  firestoreUnsubscribes.push(unsubMenu);
 
   // 2. Tables Snapshot
-  onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'tables'), (snapshot) => {
+  const unsubTables = onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'tables'), (snapshot) => {
     if (snapshot.empty) {
       if (activeRestaurantId === 'lumiere-dining') {
         MOCK_TABLES.forEach(table => {
@@ -546,9 +559,10 @@ const setupFirestoreSubscriptions = () => {
     loadedData.tables = [];
     checkAndEmit();
   });
+  firestoreUnsubscribes.push(unsubTables);
 
   // 3. Orders Snapshot
-  onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'orders'), (snapshot) => {
+  const unsubOrders = onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'orders'), (snapshot) => {
     loadedData.orders = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
     checkAndEmit();
   }, (err) => {
@@ -556,9 +570,10 @@ const setupFirestoreSubscriptions = () => {
     loadedData.orders = [];
     checkAndEmit();
   });
+  firestoreUnsubscribes.push(unsubOrders);
 
   // 4. Customers Snapshot
-  onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'customers'), (snapshot) => {
+  const unsubCustomers = onSnapshot(collection(firestoreDb, 'restaurants', activeRestaurantId, 'customers'), (snapshot) => {
     if (snapshot.empty) {
       if (activeRestaurantId === 'lumiere-dining') {
         MOCK_CUSTOMERS.forEach(c => {
@@ -577,9 +592,10 @@ const setupFirestoreSubscriptions = () => {
     loadedData.customers = [];
     checkAndEmit();
   });
+  firestoreUnsubscribes.push(unsubCustomers);
 
   // 5. Settings Snapshot
-  onSnapshot(doc(firestoreDb, 'restaurants', activeRestaurantId, 'settings', 'main'), (snapshot) => {
+  const unsubSettings = onSnapshot(doc(firestoreDb, 'restaurants', activeRestaurantId, 'settings', 'main'), (snapshot) => {
     if (snapshot.exists()) {
       loadedData.settings = snapshot.data() as Settings;
       checkAndEmit();
@@ -623,6 +639,7 @@ const setupFirestoreSubscriptions = () => {
     loadedData.settings = fallbackSettings;
     checkAndEmit();
   });
+  firestoreUnsubscribes.push(unsubSettings);
 };
 
 // Subscribe UI components to state updates

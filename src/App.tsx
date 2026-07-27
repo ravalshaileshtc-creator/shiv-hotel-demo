@@ -221,6 +221,11 @@ export default function App() {
         restaurantId,
         tableId
       });
+
+      // Dynamically re-initialize connections if a new QR restaurantId is scanned
+      if (restaurantId) {
+        initSync();
+      }
     };
 
     // Listen to changes in navigation
