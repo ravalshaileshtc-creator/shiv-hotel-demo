@@ -307,10 +307,25 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
   const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
-    { role: 'assistant', content: 'Namaste! 🙏 Welcome to Lumière Dining. I can recommend our signature Truffle Tagliatelle or Indigo Spark cocktail, answer dietary restrictions, or calculate pairings. What can I fetch for you?' }
+    { role: 'assistant', content: 'Namaste! 🙏 Welcome. I am your dining assistant. How may I assist you today?' }
   ]);
   const [isAiTyping, setIsAiTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Sync welcome message dynamically when settings or language changes
+  useEffect(() => {
+    const name = settings?.restaurantName || 'Shiv Hotel';
+    const msg = lang === 'gu'
+      ? `નમસ્તે! 🙏 ${name} માં આપનું હાર્દિક સ્વાગત છે. હું આપનો ડિજિટલ ઓર્ડરિંગ મદદગાર છું. હું આપને સ્વાદિષ્ટ ગુજરાતી અને ભારતીય વાનગીઓ સૂચવી શકું છું, અથવા કાર્ટમાં વસ્તુઓ ઉમેરવામાં મદદ કરી શકું છું. હું આપના માટે શું લાવી શકું?`
+      : `Namaste! 🙏 Welcome to ${name}. I am your dining assistant. I can recommend delicious Gujarati & Indian dishes, explain menu items, or help add items to your cart. How may I assist you today?`;
+    
+    setChatHistory(prev => {
+      if (prev.length <= 1) {
+        return [{ role: 'assistant', content: msg }];
+      }
+      return prev;
+    });
+  }, [settings, lang]);
 
   // Load state and subscribe
   useEffect(() => {
@@ -1510,8 +1525,8 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                     <Sparkles className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-extrabold">Lumière AI Assistant</h2>
-                    <p className="text-[10px] text-white/80 font-medium">Chef's Helper Assistant</p>
+                    <h2 className="text-sm font-extrabold">{settings?.restaurantName || 'Shiv Hotel'} AI Assistant</h2>
+                    <p className="text-[10px] text-white/80 font-medium">Dining & Ordering Assistant</p>
                   </div>
                 </div>
                 <button 
