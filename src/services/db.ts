@@ -194,6 +194,31 @@ const getFirebaseConfig = () => {
   };
 };
 
+export const safeLocalStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.warn('localStorage is not accessible:', e);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      console.warn('localStorage is not writeable:', e);
+    }
+  },
+  removeItem: (key: string): void => {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      console.warn('localStorage is not modifiable:', e);
+    }
+  }
+};
+
 let firebaseApp: any = null;
 let firestoreDb: any = null;
 let isFirebaseMode = false;
@@ -204,11 +229,11 @@ export const getActiveRestaurantId = () => {
   const searchParams = new URLSearchParams(window.location.search);
   const qId = searchParams.get('restaurantId');
   if (qId) {
-    localStorage.setItem('saas_restaurant_id', qId);
+    safeLocalStorage.setItem('saas_restaurant_id', qId);
     activeRestaurantId = qId;
     return qId;
   }
-  const savedId = localStorage.getItem('saas_restaurant_id');
+  const savedId = safeLocalStorage.getItem('saas_restaurant_id');
   if (savedId) {
     activeRestaurantId = savedId;
     return savedId;
@@ -632,9 +657,9 @@ export const updateState = async (partialState: Partial<DBState>) => {
 // Save Firebase Config
 export const saveFirebaseConfig = (config: any) => {
   if (config) {
-    localStorage.setItem('firebase_config', JSON.stringify(config));
+    safeLocalStorage.setItem('firebase_config', JSON.stringify(config));
   } else {
-    localStorage.removeItem('firebase_config');
+    safeLocalStorage.removeItem('firebase_config');
   }
   initSync(); // Re-initialize
 };

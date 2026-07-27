@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type MenuItem, type Table, type Order, type Settings, type Customer, subscribeToState, updateState, getRestaurantTenant } from '../services/db';
+import { type MenuItem, type Table, type Order, type Settings, type Customer, subscribeToState, updateState, getRestaurantTenant, safeLocalStorage } from '../services/db';
 import { 
   Search, 
   ShoppingBag, 
@@ -220,13 +220,13 @@ const translateItemDesc = (item: MenuItem, lang: 'en' | 'hi' | 'gu') => {
 
 export default function CustomerDashboard({ restaurantId, tableId }: CustomerDashboardProps) {
   // Translation States
-  const [lang, setLang] = useState<'en' | 'hi' | 'gu'>((localStorage.getItem('app_lang') as any) || 'en');
+  const [lang, setLang] = useState<'en' | 'hi' | 'gu'>((safeLocalStorage.getItem('app_lang') as any) || 'en');
   const t = (translations as any)[lang];
 
   const toggleLanguage = () => {
     const nextLang = lang === 'en' ? 'hi' : lang === 'hi' ? 'gu' : 'en';
     setLang(nextLang);
-    localStorage.setItem('app_lang', nextLang);
+    safeLocalStorage.setItem('app_lang', nextLang);
   };
 
   // DB States

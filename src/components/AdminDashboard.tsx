@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, getIsFirebaseMode, getAllRestaurantTenants, updateRestaurantTenant, getActiveRestaurantId, type RestaurantTenant, saveUserDocument, deleteUserDocument, getRestaurantUsers } from '../services/db';
+import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, getIsFirebaseMode, getAllRestaurantTenants, updateRestaurantTenant, getActiveRestaurantId, type RestaurantTenant, saveUserDocument, deleteUserDocument, getRestaurantUsers, safeLocalStorage } from '../services/db';
 import { 
   TrendingUp, 
   ShoppingBag, 
@@ -467,7 +467,7 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
 
           <button 
             onClick={() => {
-              localStorage.removeItem('saas_user_session');
+              safeLocalStorage.removeItem('saas_user_session');
               window.location.href = '/';
             }}
             className="text-xs bg-red-50 hover:bg-red-100 text-red-500 font-bold px-3 py-1.5 rounded-xl cursor-pointer transition-colors border border-red-200"

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type Order, type Table, subscribeToState, updateState, getActiveRestaurantId, getAllRestaurantTenants } from '../services/db';
+import { type Order, type Table, subscribeToState, updateState, getActiveRestaurantId, getAllRestaurantTenants, safeLocalStorage } from '../services/db';
 import { 
   Volume2, 
   VolumeX, 
@@ -13,7 +13,7 @@ import {
 
 export default function KDS() {
   const isSuperAdmin = (() => {
-    const saved = localStorage.getItem('saas_user_session');
+    const saved = safeLocalStorage.getItem('saas_user_session');
     if (!saved) return false;
     try {
       const parsed = JSON.parse(saved);
@@ -229,7 +229,7 @@ export default function KDS() {
             <select
               value={getActiveRestaurantId()}
               onChange={(e) => {
-                localStorage.setItem('saas_restaurant_id', e.target.value);
+                safeLocalStorage.setItem('saas_restaurant_id', e.target.value);
                 window.location.search = `?restaurantId=${e.target.value}`;
               }}
               className="bg-slate-700 border border-slate-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -255,7 +255,7 @@ export default function KDS() {
           </button>
           <button 
             onClick={() => {
-              localStorage.removeItem('saas_user_session');
+              safeLocalStorage.removeItem('saas_user_session');
               window.location.href = '/';
             }}
             className="text-xs bg-red-600/20 hover:bg-red-650/40 text-red-400 font-extrabold px-3 py-2 rounded-xl cursor-pointer transition-colors border border-red-500/20"

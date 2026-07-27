@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { initSync, updateRestaurantTenant, type RestaurantTenant, getUserDocument, saveUserDocument, subscribeToState } from './services/db';
+import { initSync, updateRestaurantTenant, type RestaurantTenant, getUserDocument, saveUserDocument, subscribeToState, safeLocalStorage } from './services/db';
 import CustomerDashboard from './components/CustomerDashboard';
 import KDS from './components/KDS';
 import CashierTerminal from './components/CashierTerminal';
@@ -35,8 +35,13 @@ export default function App() {
 
   // Load session from localStorage
   const [userSession, setUserSession] = useState<UserSession | null>(() => {
-    const saved = localStorage.getItem('saas_user_session');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = safeLocalStorage.getItem('saas_user_session');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      console.error('Failed to parse user session:', e);
+      return null;
+    }
   });
 
   // Settings State for dynamic landing branding
@@ -177,8 +182,8 @@ export default function App() {
           role: userDoc.role,
           restaurantId: userDoc.restaurantId
         };
-        localStorage.setItem('saas_user_session', JSON.stringify(sessionData));
-        localStorage.setItem('saas_restaurant_id', sessionData.restaurantId);
+        safeLocalStorage.setItem('saas_user_session', JSON.stringify(sessionData));
+        safeLocalStorage.setItem('saas_restaurant_id', sessionData.restaurantId);
         
         // Re-initialize connections for this restaurant
         initSync();
@@ -512,7 +517,7 @@ export default function App() {
 
         <button
           onClick={() => {
-            localStorage.removeItem('saas_user_session');
+            safeLocalStorage.removeItem('saas_user_session');
             setUserSession(null);
             navigateTo('/');
           }}

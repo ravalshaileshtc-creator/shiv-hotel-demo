@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type Table, type Order, type Settings, subscribeToState, updateState, getActiveRestaurantId, getAllRestaurantTenants } from '../services/db';
+import { type Table, type Order, type Settings, subscribeToState, updateState, getActiveRestaurantId, getAllRestaurantTenants, safeLocalStorage } from '../services/db';
 import { 
   Printer, 
   Check, 
@@ -34,7 +34,7 @@ export default function CashierTerminal() {
   const upiQrCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const isSuperAdmin = (() => {
-    const saved = localStorage.getItem('saas_user_session');
+    const saved = safeLocalStorage.getItem('saas_user_session');
     if (!saved) return false;
     try {
       const parsed = JSON.parse(saved);
@@ -194,7 +194,7 @@ export default function CashierTerminal() {
             <select
               value={getActiveRestaurantId()}
               onChange={(e) => {
-                localStorage.setItem('saas_restaurant_id', e.target.value);
+                safeLocalStorage.setItem('saas_restaurant_id', e.target.value);
                 window.location.search = `?restaurantId=${e.target.value}`;
               }}
               className="bg-gray-100 border border-gray-200 text-gray-800 text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -208,7 +208,7 @@ export default function CashierTerminal() {
           )}
           <button 
             onClick={() => {
-              localStorage.removeItem('saas_user_session');
+              safeLocalStorage.removeItem('saas_user_session');
               window.location.href = '/';
             }}
             className="text-xs bg-red-50 hover:bg-red-100 text-red-500 font-bold px-3 py-1.5 rounded-xl cursor-pointer transition-colors border border-red-200"
