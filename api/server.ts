@@ -8,7 +8,7 @@ import { createServer as createViteServer } from 'vite';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, getDocs, collection } from 'firebase/firestore';
 
 dotenv.config();
 
@@ -291,21 +291,40 @@ function executePlaceOrder(items: any[], tableId: string) {
 
 // Google Gemini AI chat endpoint
 app.post('/api/chat', async (req, res) => {
-  const { message, history, tableId } = req.body;
+  const { message, history, tableId, restaurantId } = req.body;
+  
+  let activeMenu = dbState.menu;
+  let activeSettings = dbState.settings;
+
+  if (restaurantId && firestoreDb) {
+    try {
+      const menuSnap = await getDocs(collection(firestoreDb, 'restaurants', restaurantId, 'menu'));
+      if (!menuSnap.empty) {
+        activeMenu = menuSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      }
+      
+      const settingsSnap = await getDoc(doc(firestoreDb, 'restaurants', restaurantId, 'settings', 'main'));
+      if (settingsSnap.exists()) {
+        activeSettings = settingsSnap.data() as any;
+      }
+    } catch (e) {
+      console.error(`Failed to load menu/settings for restaurant ${restaurantId} from Firestore:`, e);
+    }
+  }
   
   // Construct menu text context for Gemini
-  const menuContext = dbState.menu
+  const menuContext = activeMenu
     .filter(item => item.isAvailable)
-    .map(item => `- ${item.name} (${item.category}, ${dbState.settings.currencySymbol}${item.price}): ${item.description}. Customization options: ${item.customizations.join(', ')}`)
+    .map(item => `- ${item.name} (${item.category}, ${activeSettings.currencySymbol || '₹'}${item.price}): ${item.description || ''}. Customization options: ${(item.customizations || []).join(', ')}`)
     .join('\n');
 
-  const systemPrompt = `You are a warm, extremely polite, and helpful AI Dining Assistant named "Shiv Hotel AI Assistant" at "${dbState.settings.restaurantName || 'Shiv Hotel'}".
+  const systemPrompt = `You are a warm, extremely polite, and helpful AI Dining Assistant named "Shiv Hotel AI Assistant" at "${activeSettings.restaurantName || 'Shiv Hotel'}".
 We are a premium restaurant waiter and food ordering assistant located in Gujarat, India.
 
 Our restaurant details:
-Address: ${dbState.settings.address || 'Gujarat, India'}
-Tax Rate: ${dbState.settings.taxPercentage}% Service Fee.
-Currency: ${dbState.settings.currencySymbol}
+Address: ${activeSettings.address || 'Gujarat, India'}
+Tax Rate: ${activeSettings.taxPercentage || 5}% Service Fee.
+Currency: ${activeSettings.currencySymbol || '₹'}
 
 Here is our current active menu:
 ${menuContext}
@@ -325,9 +344,9 @@ Guidelines:
     let reply = '';
     
     if (userMsg.includes('hello') || userMsg.includes('hi') || userMsg.includes('hey')) {
-      reply = `Namaste! Welcome to **${dbState.settings.restaurantName || 'Shiv Hotel'}**! 🍽️ I am your Shiv Hotel AI Assistant. How can I help you today? I can recommend dishes, explain our menu, or help place your order!`;
+      reply = `Namaste! Welcome to **${activeSettings.restaurantName || 'Shiv Hotel'}**! 🍽️ I am your Shiv Hotel AI Assistant. How can I help you today? I can recommend dishes, explain our menu, or help place your order!`;
     } else if (userMsg.includes('veg') || userMsg.includes('vegetarian')) {
-      const vegItems = dbState.menu.filter(i => i.isVeg && i.isAvailable).map(i => `• **${i.name}** (${dbState.settings.currencySymbol}${i.price})`).slice(0, 4).join('\n');
+      const vegItems = activeMenu.filter(i => i.isVeg && i.isAvailable).map(i => `• **${i.name}** (${activeSettings.currencySymbol || '₹'}${i.price})`).slice(0, 4).join('\n');
       reply = `We serve 100% delicious vegetarian and Gujarati special dishes! Here are some of our guest favorites:\n\n${vegItems || '• Butter Roti\n• Paneer Chilli\n• Dal Fry + Tawa Roti Combo'}\n\nWould you like me to add any of these to your cart? 🍛`;
     } else if (userMsg.includes('recommend') || userMsg.includes('best') || userMsg.includes('special')) {
       reply = `I highly recommend starting with our delicious **Paneer Chilli Dry** or **Vegetable Pepper Salt** 🌶️, followed by our comforting **Dal Fry** with hot **Tandoori Roti** or **Jeera Rice** 🍛. To drink, our fresh **Butter Milk** (છાશ) or sweet **Lassi** is a must-have!`;
@@ -337,7 +356,7 @@ Guidelines:
       reply = `We offer refreshing beverages! You must try our thick **Dry Fruit Lassi** or a cold glass of spiced **Butter Milk** (છાશ) 🥛!`;
     } else if (userMsg.includes('order') || userMsg.includes('buy') || userMsg.includes('add')) {
       // Mock order placement trigger
-      const firstMenu = dbState.menu[0]?.name || 'Dal Fry + Tawa Roti Combo';
+      const firstMenu = activeMenu[0]?.name || 'Dal Fry + Tawa Roti Combo';
       const orderResult = executePlaceOrder([{ name: firstMenu, quantity: 1 }], tableId || 'table-1');
       if (orderResult.success) {
         reply = `🍽️ **Order Placed via AI!**\n\nI have placed an order for **1x ${firstMenu}** on your table. You can see it preparing now!`;

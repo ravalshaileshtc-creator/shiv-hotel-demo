@@ -582,7 +582,8 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
         body: JSON.stringify({
           message: userText,
           history: chatHistory,
-          tableId: scannedTableId
+          tableId: scannedTableId,
+          restaurantId: restaurantId
         })
       });
       const data = await response.json();
