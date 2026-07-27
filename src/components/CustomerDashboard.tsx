@@ -246,6 +246,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   // Tenant subscription checking states
   const [tenantStatus, setTenantStatus] = useState<'ACTIVE' | 'PENDING_PAYMENT' | 'SUSPENDED' | null>(null);
   const [tenantName, setTenantName] = useState<string>('Lumière Dining');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadTenant = async () => {
@@ -306,6 +307,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
       setOrders(state.orders);
       setSettings(state.settings);
       setCustomers(state.customers);
+      setIsLoading(false);
     });
     return unsubscribe;
   }, []);
@@ -574,6 +576,30 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary-600/10 blur-[100px] pointer-events-none"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-amber-500/10 blur-[100px] pointer-events-none"></div>
+        
+        <div className="flex flex-col items-center gap-4 relative z-10">
+          <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-primary-600 to-amber-500 flex items-center justify-center shadow-2xl animate-bounce">
+            <Utensils className="w-8 h-8 text-white" />
+          </div>
+          <div className="text-center">
+            <h2 className="text-lg font-bold text-white tracking-tight">{tenantName || 'Restaurant'}</h2>
+            <p className="text-xs text-slate-400 mt-1 animate-pulse">Loading menu & table details...</p>
+          </div>
+          <div className="w-64 space-y-3 mt-6">
+            <div className="h-4 bg-slate-800 rounded-full w-3/4 animate-pulse mx-auto"></div>
+            <div className="h-3 bg-slate-800 rounded-full w-1/2 animate-pulse mx-auto"></div>
+            <div className="h-20 bg-slate-900 border border-slate-800 rounded-2xl animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (tenantStatus === 'PENDING_PAYMENT' || tenantStatus === 'SUSPENDED') {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
@@ -759,49 +785,69 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
             })()}
 
             {/* Menu Grid */}
-            <section className="grid grid-cols-2 gap-4 pb-12">
-              {filteredMenu.map(item => (
-                <div 
-                  key={item.id} 
-                  className="glass-card rounded-[24px] p-3 flex flex-col justify-between shadow-[0px_20px_20px_0px_rgba(0,0,0,0.05)] hover:scale-[1.02] transition-transform"
-                >
-                  <div className="h-28 w-full rounded-xl overflow-hidden mb-3.5 relative bg-slate-50 border border-slate-100">
-                    <img 
-                      src={item.image} 
-                      alt={translateItemName(item, lang)} 
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500';
-                      }}
-                    />
-                    <span className={`absolute top-2 left-2 w-3.5 h-3.5 border rounded flex items-center justify-center bg-white ${
-                      item.isVeg ? 'border-green-600' : 'border-red-600'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${item.isVeg ? 'bg-green-600' : 'bg-red-600'}`}></span>
-                    </span>
-                  </div>
-
-                  <div className="grow flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-extrabold text-xs text-slate-800 mb-0.5 leading-snug line-clamp-1">{translateItemName(item, lang)}</h3>
-                      <p className="text-[#546067] text-[10px] line-clamp-1 leading-normal mb-3">{translateItemDesc(item, lang)}</p>
-                    </div>
-                    
-                    <div className="flex justify-between items-center mt-auto">
-                      <span className="text-primary-500 font-extrabold text-xs">
-                        {settings.currencySymbol}{item.price.toFixed(2)}
-                      </span>
-                      <button 
-                        onClick={() => openCustomizationModal(item)}
-                        className="w-7 h-7 rounded-full bg-primary-500 hover:bg-primary-600 text-white flex items-center justify-center transition-colors shadow-md shadow-primary-500/10 cursor-pointer"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+            {filteredMenu.length === 0 ? (
+              <div className="text-center py-16 px-6 glass-card rounded-[32px] flex flex-col items-center gap-4 border border-white/40 shadow-lg mt-4 w-full">
+                <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center text-primary-500 shadow-inner">
+                  <Sparkles className="w-8 h-8" />
                 </div>
-              ))}
-            </section>
+                <div>
+                  <h3 className="font-extrabold text-sm text-slate-800">
+                    {lang === 'gu' ? 'મેનૂ ટૂંક સમયમાં આવી રહ્યું છે' : lang === 'hi' ? 'मेनू जल्द ही आ रहा है' : 'Menu Coming Soon'}
+                  </h3>
+                  <p className="text-[11px] text-[#546067] leading-relaxed mt-1.5 max-w-[240px] mx-auto">
+                    {lang === 'gu' 
+                      ? 'રસોડાની ટીમ દ્વારા સ્વાદિષ્ટ વાનગીઓ ઉમેરવામાં આવી રહી છે. કૃપા કરીને થોડીવાર પછી ફરીથી ચેક કરો.' 
+                      : lang === 'hi'
+                      ? 'रसोई टीम द्वारा स्वादिष्ट व्यंजन जोड़े जा रहे हैं। कृपया कुछ देर बाद पुनः देखें।'
+                      : 'Delicious items are being prepared and added by the kitchen team. Please check back shortly.'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <section className="grid grid-cols-2 gap-4 pb-12 w-full">
+                {filteredMenu.map(item => (
+                  <div 
+                    key={item.id} 
+                    className="glass-card rounded-[24px] p-3 flex flex-col justify-between shadow-[0px_20px_20px_0px_rgba(0,0,0,0.05)] hover:scale-[1.02] transition-transform"
+                  >
+                    <div className="h-28 w-full rounded-xl overflow-hidden mb-3.5 relative bg-slate-50 border border-slate-100">
+                      <img 
+                        src={item.image} 
+                        alt={translateItemName(item, lang)} 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500';
+                        }}
+                      />
+                      <span className={`absolute top-2 left-2 w-3.5 h-3.5 border rounded flex items-center justify-center bg-white ${
+                        item.isVeg ? 'border-green-600' : 'border-red-600'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${item.isVeg ? 'bg-green-600' : 'bg-red-600'}`}></span>
+                      </span>
+                    </div>
+
+                    <div className="grow flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-extrabold text-xs text-slate-800 mb-0.5 leading-snug line-clamp-1">{translateItemName(item, lang)}</h3>
+                        <p className="text-[#546067] text-[10px] line-clamp-1 leading-normal mb-3">{translateItemDesc(item, lang)}</p>
+                      </div>
+                      
+                      <div className="flex justify-between items-center mt-auto">
+                        <span className="text-primary-500 font-extrabold text-xs">
+                          {settings.currencySymbol}{item.price.toFixed(2)}
+                        </span>
+                        <button 
+                          onClick={() => openCustomizationModal(item)}
+                          className="w-7 h-7 rounded-full bg-primary-500 hover:bg-primary-600 text-white flex items-center justify-center transition-colors shadow-md shadow-primary-500/10 cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </section>
+            )}
           </div>
         )}
 
