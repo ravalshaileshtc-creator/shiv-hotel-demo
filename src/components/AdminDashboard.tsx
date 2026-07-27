@@ -273,10 +273,10 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
 
   const openMenuEdit = (item: MenuItem) => {
     setEditingMenuItem(item);
-    setMenuFormName(item.name);
-    setMenuFormNameGujarati(item.nameGujarati || '');
-    setMenuFormDesc(item.description);
-    setMenuFormDescGujarati(item.descriptionGujarati || '');
+    setMenuFormName(item.nameLanguages?.en || item.name);
+    setMenuFormNameGujarati(item.nameLanguages?.gu || item.nameGujarati || '');
+    setMenuFormDesc(item.descLanguages?.en || item.description);
+    setMenuFormDescGujarati(item.descLanguages?.gu || item.descriptionGujarati || '');
     setMenuFormPrice(item.price);
     setMenuFormCategory(item.category);
     setMenuFormImage(item.image);
@@ -311,22 +311,41 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
     let updatedMenu = [...menu];
     const imageFallback = menuFormImage.trim() || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500';
 
+    const categoryMap: { [key: string]: string } = {
+      'Starters': 'સ્ટાર્ટર્સ',
+      'Mains': 'મુખ્ય વાનગીઓ',
+      'Desserts': 'મીઠાઈ / ડિઝર્ટ',
+      'Beverages': 'પીણાં'
+    };
+
     if (editingMenuItem) {
       // Edit
       updatedMenu = menu.map(m => {
         if (m.id === editingMenuItem.id) {
           return {
             ...m,
-            name: menuFormName,
-            nameGujarati: menuFormNameGujarati,
-            description: menuFormDesc,
-            descriptionGujarati: menuFormDescGujarati,
+            name: menuFormName.trim(),
+            nameGujarati: menuFormNameGujarati.trim(),
+            description: menuFormDesc.trim(),
+            descriptionGujarati: menuFormDescGujarati.trim(),
             price: menuFormPrice,
             category: menuFormCategory,
             image: imageFallback,
             isVeg: menuFormIsVeg,
             customizations: menuFormCustomizations,
-            isAvailable: menuFormIsAvailable
+            isAvailable: menuFormIsAvailable,
+            nameLanguages: {
+              en: menuFormName.trim(),
+              gu: menuFormNameGujarati.trim() || menuFormName.trim()
+            },
+            descLanguages: {
+              en: menuFormDesc.trim(),
+              gu: menuFormDescGujarati.trim() || menuFormDesc.trim()
+            },
+            categoryLanguages: {
+              en: menuFormCategory,
+              gu: categoryMap[menuFormCategory] || menuFormCategory
+            }
           };
         }
         return m;
@@ -335,16 +354,28 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
       // Add
       const newItem: MenuItem = {
         id: `m-${Date.now()}`,
-        name: menuFormName,
-        nameGujarati: menuFormNameGujarati,
-        description: menuFormDesc,
-        descriptionGujarati: menuFormDescGujarati,
+        name: menuFormName.trim(),
+        nameGujarati: menuFormNameGujarati.trim(),
+        description: menuFormDesc.trim(),
+        descriptionGujarati: menuFormDescGujarati.trim(),
         price: menuFormPrice,
         category: menuFormCategory,
         image: imageFallback,
         isVeg: menuFormIsVeg,
         customizations: menuFormCustomizations,
-        isAvailable: menuFormIsAvailable
+        isAvailable: menuFormIsAvailable,
+        nameLanguages: {
+          en: menuFormName.trim(),
+          gu: menuFormNameGujarati.trim() || menuFormName.trim()
+        },
+        descLanguages: {
+          en: menuFormDesc.trim(),
+          gu: menuFormDescGujarati.trim() || menuFormDesc.trim()
+        },
+        categoryLanguages: {
+          en: menuFormCategory,
+          gu: categoryMap[menuFormCategory] || menuFormCategory
+        }
       };
       updatedMenu.push(newItem);
     }

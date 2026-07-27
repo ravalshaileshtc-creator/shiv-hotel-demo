@@ -13,15 +13,28 @@ import {
 export interface MenuItem {
   id: string;
   name: string;
-  nameGujarati?: string;
+  nameGujarati?: string; // legacy support
   description: string;
-  descriptionGujarati?: string;
+  descriptionGujarati?: string; // legacy support
   price: number;
   category: string;
   image: string;
   isVeg: boolean;
   isAvailable: boolean;
   customizations: string[];
+  // Multilingual JSON fields
+  nameLanguages?: {
+    en: string;
+    gu: string;
+  };
+  descLanguages?: {
+    en: string;
+    gu: string;
+  };
+  categoryLanguages?: {
+    en: string;
+    gu: string;
+  };
 }
 
 export interface Table {

@@ -197,34 +197,47 @@ const ITEM_TRANSLATIONS: { [key: string]: { name: string; desc?: string } } = {
   'Chocolate Brownie': { name: 'ચોકલેટ બ્રાઉની', desc: 'આઈસ્ક્રીમ સાથે ગરમ બ્રાઉની' }
 };
 
-const translateCategory = (cat: string, lang: 'en' | 'hi' | 'gu') => {
-  if (lang === 'gu') return CATEGORY_TRANSLATIONS[cat] || cat;
+const translateCategory = (cat: string, lang: 'en' | 'hi' | 'gu', menu?: MenuItem[]) => {
+  if (cat === 'All') return lang === 'gu' ? 'બધા' : 'All';
+  if (lang === 'gu') {
+    if (menu) {
+      const match = menu.find(item => item.category === cat);
+      if (match?.categoryLanguages?.gu?.trim()) return match.categoryLanguages.gu;
+    }
+    return CATEGORY_TRANSLATIONS[cat] || cat;
+  }
+  if (menu) {
+    const match = menu.find(item => item.category === cat);
+    if (match?.categoryLanguages?.en?.trim()) return match.categoryLanguages.en;
+  }
   return cat;
 };
 
 const translateItemName = (item: MenuItem, lang: 'en' | 'hi' | 'gu') => {
   if (lang === 'gu') {
+    if (item.nameLanguages?.gu?.trim()) return item.nameLanguages.gu;
     if (item.nameGujarati?.trim()) return item.nameGujarati;
     return ITEM_TRANSLATIONS[item.name]?.name || item.name;
   }
-  return item.name;
+  return item.nameLanguages?.en || item.name;
 };
 
 const translateItemDesc = (item: MenuItem, lang: 'en' | 'hi' | 'gu') => {
   if (lang === 'gu') {
+    if (item.descLanguages?.gu?.trim()) return item.descLanguages.gu;
     if (item.descriptionGujarati?.trim()) return item.descriptionGujarati;
     return ITEM_TRANSLATIONS[item.name]?.desc || item.description;
   }
-  return item.description;
+  return item.descLanguages?.en || item.description;
 };
 
 export default function CustomerDashboard({ restaurantId, tableId }: CustomerDashboardProps) {
   // Translation States
-  const [lang, setLang] = useState<'en' | 'hi' | 'gu'>((safeLocalStorage.getItem('app_lang') as any) || 'en');
-  const t = (translations as any)[lang];
+  const [lang, setLang] = useState<'en' | 'gu'>(safeLocalStorage.getItem('app_lang') === 'gu' ? 'gu' : 'en');
+  const t = (translations as any)[lang] || translations.en;
 
   const toggleLanguage = () => {
-    const nextLang = lang === 'en' ? 'hi' : lang === 'hi' ? 'gu' : 'en';
+    const nextLang = lang === 'en' ? 'gu' : 'en';
     setLang(nextLang);
     safeLocalStorage.setItem('app_lang', nextLang);
   };
@@ -342,13 +355,24 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   const activeOrder = orders.find(o => o.tableId === scannedTableId && o.status !== 'COMPLETED' && o.status !== 'REJECTED');
 
   // Categories list
-  const categories = ['All', 'Starters', 'Mains', 'Desserts', 'Beverages'];
+  const categories = ['All', ...Array.from(new Set(menu.map(item => item.category).filter(Boolean)))];
 
   // Filtered Menu
   const filteredMenu = menu.filter(item => {
     if (!item.isAvailable) return false;
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          item.description.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const nameToSearch = (lang === 'gu' 
+      ? (item.nameLanguages?.gu || item.nameGujarati || ITEM_TRANSLATIONS[item.name]?.name || item.name)
+      : (item.nameLanguages?.en || item.name)
+    ).toLowerCase();
+    
+    const descToSearch = (lang === 'gu'
+      ? (item.descLanguages?.gu || item.descriptionGujarati || ITEM_TRANSLATIONS[item.name]?.desc || item.description)
+      : (item.descLanguages?.en || item.description)
+    ).toLowerCase();
+
+    const matchesSearch = nameToSearch.includes(searchQuery.toLowerCase()) || 
+                          descToSearch.includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
     const matchesVeg = !vegOnly || item.isVeg;
     return matchesSearch && matchesCategory && matchesVeg;
@@ -672,7 +696,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
               onClick={toggleLanguage}
               className="text-[10px] font-extrabold text-primary-600 bg-primary-50 border border-primary-100 px-2.5 py-1 rounded-lg hover:bg-primary-100 transition-colors"
             >
-              {lang === 'en' ? 'हिंदी' : lang === 'hi' ? 'ગુજરાતી' : 'English'}
+              {lang === 'en' ? 'ગુજરાતી' : 'English'}
             </button>
             <button 
               onClick={() => setActiveTab('scan')}
@@ -719,7 +743,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                             : 'glass-card text-[#546067]'
                         }`}
                       >
-                        {translateCategory(cat, lang)}
+                        {translateCategory(cat, lang, menu)}
                       </button>
                     );
                   })}
@@ -792,13 +816,11 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                 </div>
                 <div>
                   <h3 className="font-extrabold text-sm text-slate-800">
-                    {lang === 'gu' ? 'મેનૂ ટૂંક સમયમાં આવી રહ્યું છે' : lang === 'hi' ? 'मेनू जल्द ही आ रहा है' : 'Menu Coming Soon'}
+                    {lang === 'gu' ? 'મેનૂ ટૂંક સમયમાં આવી રહ્યું છે' : 'Menu Coming Soon'}
                   </h3>
                   <p className="text-[11px] text-[#546067] leading-relaxed mt-1.5 max-w-[240px] mx-auto">
                     {lang === 'gu' 
                       ? 'રસોડાની ટીમ દ્વારા સ્વાદિષ્ટ વાનગીઓ ઉમેરવામાં આવી રહી છે. કૃપા કરીને થોડીવાર પછી ફરીથી ચેક કરો.' 
-                      : lang === 'hi'
-                      ? 'रसोई टीम द्वारा स्वादिष्ट व्यंजन जोड़े जा रहे हैं। कृपया कुछ देर बाद पुनः देखें।'
                       : 'Delicious items are being prepared and added by the kitchen team. Please check back shortly.'}
                   </p>
                 </div>
