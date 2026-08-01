@@ -1,18 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&family=Manrope:wght@200..800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-display: 'Manrope', sans-serif;
+  --font-display: 'Playfair Display', serif;
   --font-sans: 'Manrope', sans-serif;
   
-  --color-primary-50: #f0f7fc;
-  --color-primary-100: #dbebfa;
-  --color-primary-500: #005dac;
-  --color-primary-600: #004c8c;
-  --color-primary-700: #003a6d;
+  --color-primary-50: #fbf9f2;
+  --color-primary-100: #f4edd0;
+  --color-primary-500: #d4af37; /* Luxury Gold */
+  --color-primary-600: #bfa02c;
+  --color-primary-700: #a5871f;
   
-  --color-dark-bg: #090b10;
-  --color-dark-card: #131722;
-  --color-dark-border: #1f2536;
+  --color-dark-bg: #1c1b1b;
+  --color-dark-card: #263238;
+  --color-dark-border: rgba(255, 255, 255, 0.05);
 }
 
 @layer base {
@@ -20,7 +21,8 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #f9f9f9;
+    background-color: #ffffff;
+    color: #263238;
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -39,27 +41,33 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 93, 172, 0.1);
+  background: rgba(212, 175, 55, 0.2);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 93, 172, 0.25);
+  background: rgba(212, 175, 55, 0.45);
 }
 
 /* Glassmorphism Cards */
 .glass-card {
   background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
 }
 
 .dark-glass {
-  background: rgba(19, 23, 34, 0.8);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
+  background: rgba(38, 50, 56, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Text glow effects */
+.text-glow-gold {
+  text-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
 }
 
 /* QR Camera Scanner Viewfinder styling */
@@ -67,7 +75,7 @@
   content: '';
   position: absolute;
   top: -2px; left: -2px; right: -2px; bottom: -2px;
-  border: 2px solid white;
+  border: 2px solid #d4af37;
   border-radius: 24px;
   mask: 
       conic-gradient(from 0deg at 20% 20%, transparent 270deg, black 270deg),
@@ -90,8 +98,8 @@
 
 .scan-laser {
   height: 2px;
-  background: linear-gradient(90deg, transparent, #005dac, transparent);
-  box-shadow: 0 0 15px #005dac;
+  background: linear-gradient(90deg, transparent, #d4af37, transparent);
+  box-shadow: 0 0 15px #d4af37;
   position: absolute;
   width: 100%;
   animation: scan-line 3s infinite ease-in-out;
@@ -99,8 +107,8 @@
 
 /* Status Animations */
 @keyframes status-pulse-pending {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 93, 172, 0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(0, 93, 172, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(212, 175, 55, 0); }
 }
 
 .pulse-active {

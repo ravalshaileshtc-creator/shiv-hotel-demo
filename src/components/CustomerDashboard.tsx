@@ -19,7 +19,8 @@ import {
   Compass,
   Lightbulb,
   CheckCircle,
-  Lock
+  Lock,
+  Keyboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -681,13 +682,13 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   }
 
   return (
-    <div className="min-h-screen bg-[#f9f9f9] pb-32 font-sans select-none text-slate-900 relative">
+    <div className="min-h-screen bg-slate-50/50 pb-32 font-sans select-none text-slate-900 relative">
       
       {/* Top App Bar */}
-      <header className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-[30px] border-b border-white/40 shadow-[0px_20px_20px_0px_rgba(0,0,0,0.05)]">
-        <div className="flex justify-between items-center px-6 h-16 w-full max-w-md mx-auto">
+      <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-black/5 shadow-sm">
+        <div className="flex justify-between items-center px-6 h-20 w-full max-w-md mx-auto">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary-100 overflow-hidden border border-primary-500/20 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-primary-100 overflow-hidden border border-primary-500/30 flex items-center justify-center shadow-inner">
               {settings.logoUrl ? (
                 <img 
                   src={settings.logoUrl} 
@@ -695,44 +696,60 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                   className="w-full h-full object-cover" 
                 />
               ) : (
-                <span className="text-primary-600 font-black text-sm uppercase">
+                <span className="text-primary-600 font-extrabold text-sm uppercase">
                   {settings.restaurantName ? settings.restaurantName.charAt(0) : 'R'}
                 </span>
               )}
             </div>
             <div>
-              <h1 className="font-extrabold text-base text-primary-500 tracking-tight leading-none">
+              <h1 className="font-display font-bold text-lg text-primary-500 tracking-tight leading-none">
                 {settings.restaurantName || 'Restaurant'}
               </h1>
-              <span className="text-[9px] font-bold text-primary-600 mt-0.5 block">
+              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1 block">
                 {activeTable ? activeTable.name : 'Table Guest'}
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button 
               onClick={toggleLanguage}
-              className="text-[10px] font-extrabold text-primary-600 bg-primary-50 border border-primary-100 px-2.5 py-1 rounded-lg hover:bg-primary-100 transition-colors"
+              className="text-[10px] font-extrabold text-primary-600 bg-primary-50 border border-primary-100/60 px-3 py-1.5 rounded-full hover:bg-primary-100 transition-colors shadow-sm cursor-pointer"
             >
               {lang === 'en' ? 'ગુજરાતી' : 'English'}
             </button>
             <button 
               onClick={() => setActiveTab('scan')}
-              className="text-primary-500 hover:opacity-85 transition-opacity p-1"
+              className="text-primary-500 hover:opacity-85 transition-opacity p-1.5 rounded-full bg-primary-50/50 border border-primary-100/30 cursor-pointer shadow-sm"
               title="Scan QR Code"
             >
-              <MapPin className="w-5 h-5" />
+              <MapPin className="w-4 h-4" />
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Content Sections */}
-      <main className="max-w-md mx-auto pt-20 px-6">
+      <main className="max-w-md mx-auto pt-24 px-6">
         
         {/* TAB 1: MENU CATALOG */}
         {activeTab === 'menu' && (
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6 pt-2">
+            
+            {/* Hero Section */}
+            <section className="flex flex-col items-center text-center mb-1">
+              <h1 className="font-display font-bold text-2.5xl md:text-3xl text-slate-800 tracking-tight leading-tight">
+                {lang === 'gu' ? 'નમસ્તે! 🙏' : 'Welcome Guest 👋'}
+              </h1>
+              <p className="font-serif italic text-xs text-slate-500 mt-1 leading-relaxed">
+                {lang === 'gu' 
+                  ? 'સ્વાદિષ્ટ અને પરંપરાગત વાનગીઓની સફર...' 
+                  : 'Your table is ready for a '}
+                <span className="text-primary-500 italic font-bold">
+                  {lang === 'gu' ? 'રસોઈ યાત્રા' : 'culinary journey.'}
+                </span>
+              </p>
+              <div className="w-16 h-[1.5px] bg-primary-500/20 mt-3.5 rounded-full"></div>
+            </section>
             
             {/* Category Filter Chips */}
             <section className="mt-2 flex flex-col gap-3">
@@ -848,18 +865,18 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                 {filteredMenu.map(item => (
                   <div 
                     key={item.id} 
-                    className="glass-card rounded-[24px] p-3 flex flex-col justify-between shadow-[0px_20px_20px_0px_rgba(0,0,0,0.05)] hover:scale-[1.02] transition-transform"
+                    className="glass-card rounded-[24px] p-3 flex flex-col justify-between border border-black/5 shadow-sm hover:scale-[1.02] active:scale-[0.99] transition-all duration-300"
                   >
-                    <div className="h-28 w-full rounded-xl overflow-hidden mb-3.5 relative bg-slate-50 border border-slate-100">
+                    <div className="h-28 w-full rounded-xl overflow-hidden mb-3.5 relative bg-slate-50 border border-primary-500/10 shadow-inner">
                       <img 
                         src={item.image} 
                         alt={translateItemName(item, lang)} 
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500';
                         }}
                       />
-                      <span className={`absolute top-2 left-2 w-3.5 h-3.5 border rounded flex items-center justify-center bg-white ${
+                      <span className={`absolute top-2 left-2 w-4 h-4 border rounded flex items-center justify-center bg-white/90 backdrop-blur-sm ${
                         item.isVeg ? 'border-green-600' : 'border-red-600'
                       }`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${item.isVeg ? 'bg-green-600' : 'bg-red-600'}`}></span>
@@ -868,19 +885,19 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
 
                     <div className="grow flex flex-col justify-between">
                       <div>
-                        <h3 className="font-extrabold text-xs text-slate-800 mb-0.5 leading-snug line-clamp-1">{translateItemName(item, lang)}</h3>
-                        <p className="text-[#546067] text-[10px] line-clamp-1 leading-normal mb-3">{translateItemDesc(item, lang)}</p>
+                        <h3 className="font-bold text-xs text-slate-800 mb-0.5 leading-snug line-clamp-1">{translateItemName(item, lang)}</h3>
+                        <p className="text-slate-400 text-[9px] line-clamp-1 leading-normal mb-3">{translateItemDesc(item, lang)}</p>
                       </div>
                       
                       <div className="flex justify-between items-center mt-auto">
-                        <span className="text-primary-500 font-extrabold text-xs">
+                        <span className="text-primary-500 font-extrabold text-xs text-glow-gold">
                           {settings.currencySymbol}{item.price.toFixed(2)}
                         </span>
                         <button 
                           onClick={() => openCustomizationModal(item)}
-                          className="w-7 h-7 rounded-full bg-primary-500 hover:bg-primary-600 text-white flex items-center justify-center transition-colors shadow-md shadow-primary-500/10 cursor-pointer"
+                          className="w-7 h-7 rounded-full bg-primary-500 hover:bg-primary-600 text-white flex items-center justify-center transition-all hover:scale-110 active:scale-90 shadow-md shadow-primary-500/20 cursor-pointer"
                         >
-                          <Plus className="w-4 h-4" />
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -893,10 +910,10 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
 
         {/* TAB 2: CAMERA QR SCANNER */}
         {activeTab === 'scan' && (
-          <div className="relative flex flex-col items-center pt-2">
+          <div className="relative flex flex-col items-center pt-2 gap-6 w-full">
             
             {/* Mock camera view frame */}
-            <div className="w-full h-96 rounded-3xl overflow-hidden relative border border-slate-200 shadow-md">
+            <div className="w-full h-80 rounded-3xl overflow-hidden relative border border-black/5 shadow-lg">
               <div 
                 className="w-full h-full bg-cover bg-center opacity-85" 
                 style={{ backgroundImage: "url('https://images.unsplash.com/photo-1544025162-d76694265947?w=600')" }}
@@ -906,9 +923,15 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
               {/* Laser animation */}
               <div className="scan-laser top-10"></div>
               
-              {/* Central viewfinder bracket box */}
+              {/* Central viewfinder bracket box with gold corners */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-48 h-48 scanner-frame rounded-[24px] flex items-center justify-center relative">
+                  {/* Gold Corner Outlines */}
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary-500 rounded-tl-xl"></div>
+                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary-500 rounded-tr-xl"></div>
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary-500 rounded-bl-xl"></div>
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary-500 rounded-br-xl"></div>
+
                   <div className="glass-card px-4 py-2 rounded-xl text-primary-500 font-bold text-xs flex items-center gap-1.5 shadow-sm animate-pulse">
                     <QrCode className="w-4 h-4 shrink-0" />
                     <span>Scanning...</span>
@@ -918,13 +941,15 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
             </div>
 
             {/* Instruction labels */}
-            <div className="text-center mt-6">
-              <h2 className="text-base font-extrabold text-slate-800">Scan Menu QR</h2>
-              <p className="text-xs text-[#546067] mt-1">Align the QR code on your table within the frame.</p>
+            <div className="text-center space-y-1.5">
+              <h2 className="font-display text-base font-bold text-slate-800">Align QR Code</h2>
+              <p className="text-[10px] text-slate-500 max-w-[240px] mx-auto leading-relaxed">
+                Scan the hotel insignia on your table to unlock your exclusive digital concierge.
+              </p>
             </div>
 
             {/* Enter Table Number manually */}
-            <div className="mt-6 w-full">
+            <div className="w-full">
               {isManualTableInputOpen ? (
                 <div className="flex gap-2">
                   <input
@@ -933,17 +958,17 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                     placeholder="E.g. 3"
                     value={manualTableNumber}
                     onChange={e => setManualTableNumber(e.target.value.replace(/\D/g, ''))}
-                    className="grow px-4 py-2.5 rounded-full border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs bg-white shadow-sm"
+                    className="grow px-4 py-2.5 rounded-2xl border border-black/5 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs bg-white shadow-sm"
                   />
                   <button 
                     onClick={handleManualTableSubmit}
-                    className="bg-primary-500 hover:bg-primary-600 text-white font-bold px-4 py-2 rounded-full text-xs shadow-sm cursor-pointer"
+                    className="bg-primary-500 hover:bg-primary-600 text-white font-bold px-5 py-2.5 rounded-2xl text-xs shadow-sm cursor-pointer transition-all active:scale-95"
                   >
                     Go
                   </button>
                   <button 
                     onClick={() => setIsManualTableInputOpen(false)}
-                    className="p-2 text-gray-400 hover:text-gray-600"
+                    className="p-2 text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -951,9 +976,9 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
               ) : (
                 <button 
                   onClick={() => setIsManualTableInputOpen(true)}
-                  className="glass-card w-full py-3.5 rounded-full flex items-center justify-center gap-2.5 active:scale-[0.98] transition-transform font-bold text-xs text-primary-500 cursor-pointer shadow-sm"
+                  className="glass-card w-full py-4 rounded-2xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform font-bold text-xs text-primary-500 cursor-pointer shadow-sm border border-black/5"
                 >
-                  <Utensils className="w-4 h-4 text-primary-500" />
+                  <Keyboard className="w-4 h-4 text-primary-500" />
                   <span>Enter Table Number Manually</span>
                 </button>
               )}
@@ -1357,52 +1382,60 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
         </button>
       </div>
 
-      {/* Bottom Navigation Bar */}
+      /* Bottom Navigation Bar */
       <nav className="fixed bottom-0 left-0 w-full z-50 max-w-md mx-auto translate-x-[-50%] left-1/2">
-        <div className="bg-white/70 backdrop-blur-[30px] rounded-t-xl border-t border-white/40 shadow-[0px_-10px_20px_0px_rgba(0,0,0,0.05)] flex justify-around items-center px-4 pb-6 pt-3 h-20">
+        <div className="bg-white/90 backdrop-blur-xl rounded-t-2xl border-t border-black/5 shadow-[0_-4px_24px_rgba(0,0,0,0.05)] flex justify-around items-center px-4 pb-6 pt-3 h-20">
           <button 
             onClick={() => setActiveTab('menu')}
-            className={`flex flex-col items-center justify-center transition-transform hover:scale-105 cursor-pointer ${
-              activeTab === 'menu' ? 'text-primary-500 font-bold' : 'text-[#546067] opacity-60'
+            className={`flex flex-col items-center justify-center py-1.5 px-4 rounded-xl transition-all duration-305 active:scale-95 cursor-pointer ${
+              activeTab === 'menu' 
+                ? 'text-primary-500 font-bold bg-primary-50/50 shadow-sm' 
+                : 'text-slate-400 hover:text-slate-600'
             }`}
           >
-            <Utensils className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-semibold">{t.menu}</span>
+            <Utensils className="w-4.5 h-4.5" />
+            <span className="text-[9px] mt-1 font-bold tracking-wider">{t.menu}</span>
           </button>
           
           <button 
             onClick={() => setActiveTab('scan')}
-            className={`flex flex-col items-center justify-center transition-transform hover:scale-105 cursor-pointer ${
-              activeTab === 'scan' ? 'text-primary-500 font-bold' : 'text-[#546067] opacity-60'
+            className={`flex flex-col items-center justify-center py-1.5 px-4 rounded-xl transition-all duration-305 active:scale-95 cursor-pointer ${
+              activeTab === 'scan' 
+                ? 'text-primary-500 font-bold bg-primary-50/50 shadow-sm' 
+                : 'text-slate-400 hover:text-slate-600'
             }`}
           >
-            <QrCode className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-semibold">{t.scan}</span>
+            <QrCode className="w-4.5 h-4.5" />
+            <span className="text-[9px] mt-1 font-bold tracking-wider">{t.scan}</span>
           </button>
- 
+  
           <button 
             onClick={() => setActiveTab('cart')}
-            className={`flex flex-col items-center justify-center relative transition-transform hover:scale-105 cursor-pointer ${
-              activeTab === 'cart' ? 'text-primary-500 font-bold' : 'text-[#546067] opacity-60'
+            className={`flex flex-col items-center justify-center py-1.5 px-4 rounded-xl relative transition-all duration-305 active:scale-95 cursor-pointer ${
+              activeTab === 'cart' 
+                ? 'text-primary-500 font-bold bg-primary-50/50 shadow-sm' 
+                : 'text-slate-400 hover:text-slate-600'
             }`}
           >
-            <ShoppingBag className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-semibold">{t.cart}</span>
+            <ShoppingBag className="w-4.5 h-4.5" />
+            <span className="text-[9px] mt-1 font-bold tracking-wider">{t.cart}</span>
             {cart.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-primary-500 text-white font-bold text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-white">
+              <span className="absolute top-0.5 right-2 bg-primary-500 text-white font-bold text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
                 {cart.reduce((s, c) => s + c.quantity, 0)}
               </span>
             )}
           </button>
- 
+  
           <button 
             onClick={() => setActiveTab('status')}
-            className={`flex flex-col items-center justify-center transition-transform hover:scale-105 cursor-pointer ${
-              activeTab === 'status' ? 'text-primary-500 font-bold' : 'text-[#546067] opacity-60'
+            className={`flex flex-col items-center justify-center py-1.5 px-4 rounded-xl transition-all duration-305 active:scale-95 cursor-pointer ${
+              activeTab === 'status' 
+                ? 'text-primary-500 font-bold bg-primary-50/50 shadow-sm' 
+                : 'text-slate-400 hover:text-slate-600'
             }`}
           >
-            <Compass className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-semibold">{t.status}</span>
+            <Compass className="w-4.5 h-4.5" />
+            <span className="text-[9px] mt-1 font-bold tracking-wider">{t.status}</span>
           </button>
         </div>
       </nav>
@@ -1511,7 +1544,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
         )}
       </AnimatePresence>
 
-      {/* CHATBOT DRAWER */}
+      /* CHATBOT DRAWER */
       <AnimatePresence>
         {isChatOpen && (
           <div className="fixed inset-0 z-50 flex justify-end bg-black/40">
@@ -1522,25 +1555,27 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
               transition={{ type: 'spring', damping: 25 }}
               className="bg-white w-full max-w-md h-full flex flex-col shadow-2xl relative"
             >
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-primary-500 to-amber-500 text-white">
+              {/* Gold/Slate Premium header */}
+              <div className="p-5 border-b border-white/5 flex items-center justify-between bg-[#1c1b1b] text-white">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-white" />
+                  <div className="w-8 h-8 rounded-full bg-primary-500/20 border border-primary-500/30 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-primary-500 animate-pulse" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-extrabold">{settings?.restaurantName || 'Shiv Hotel'} AI Assistant</h2>
-                    <p className="text-[10px] text-white/80 font-medium">Dining & Ordering Assistant</p>
+                    <h2 className="text-xs font-bold font-display uppercase tracking-wider text-primary-500">{settings?.restaurantName || 'Shiv Hotel'} AI Waiter</h2>
+                    <p className="text-[9px] text-slate-400 font-medium">Concierge Service & Ordering</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setIsChatOpen(false)}
-                  className="p-1 rounded-full hover:bg-white/10 text-white cursor-pointer"
+                  className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="grow overflow-y-auto p-4 flex flex-col gap-4 bg-gray-50">
+              {/* Chat history */}
+              <div className="grow overflow-y-auto p-5 flex flex-col gap-4 bg-slate-50/30">
                 {chatHistory.map((h, i) => (
                   <div 
                     key={i} 
@@ -1549,7 +1584,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                     <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs shadow-sm leading-relaxed ${
                       h.role === 'user' 
                         ? 'bg-primary-500 text-white rounded-tr-none' 
-                        : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'
+                        : 'bg-white text-gray-800 rounded-tl-none border border-primary-500/10'
                     }`}>
                       {h.content.split('\n').map((line, idx) => (
                         <p key={idx} className={idx > 0 ? 'mt-1' : ''}>{line}</p>
@@ -1559,28 +1594,29 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                 ))}
                 {isAiTyping && (
                   <div className="flex justify-start">
-                    <div className="bg-white text-gray-800 rounded-2xl rounded-tl-none border border-gray-100 px-4 py-3 shadow-sm flex items-center gap-1.5">
-                      <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
-                      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Chef is thinking...</span>
+                    <div className="bg-white text-gray-800 rounded-2xl rounded-tl-none border border-primary-500/10 px-4 py-3 shadow-sm flex items-center gap-1.5">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-primary-500" />
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Chef is thinking...</span>
                     </div>
                   </div>
                 )}
                 <div ref={chatEndRef} />
               </div>
 
-              <div className="p-3 border-t border-gray-100 flex items-center gap-2 bg-white">
+              {/* Input block with mic style layout */}
+              <div className="p-4 border-t border-black/5 flex items-center gap-3 bg-white">
                 <input 
                   type="text" 
-                  placeholder="Ask for recommendations, descriptions..."
+                  placeholder={lang === 'gu' ? "અહીં પૂછો..." : "Ask for recommendations, descriptions..."}
                   value={chatMessage}
                   onChange={e => setChatMessage(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') sendChatMessage(); }}
-                  className="grow px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
+                  className="grow px-4 py-3 bg-slate-50 border border-black/5 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
                 />
                 <button 
                   onClick={sendChatMessage}
                   disabled={!chatMessage.trim() || isAiTyping}
-                  className="bg-primary-500 disabled:bg-gray-200 text-white p-3 rounded-xl hover:bg-primary-600 transition-colors flex items-center justify-center cursor-pointer"
+                  className="bg-primary-500 disabled:bg-slate-200 text-white p-3 rounded-xl hover:bg-primary-600 transition-all hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer shadow-md shadow-primary-500/10"
                 >
                   <Send className="w-4 h-4" />
                 </button>
