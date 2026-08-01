@@ -4,7 +4,6 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { createServer as createViteServer } from 'vite';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import { initializeApp } from 'firebase/app';
@@ -424,13 +423,17 @@ app.post('/api/chat', async (req, res) => {
 const isProduction = process.env.NODE_ENV === 'production' || fs.existsSync(path.resolve(rootDir, 'dist'));
 
 if (!isProduction) {
-  createViteServer({
-    server: { middlewareMode: true },
-    appType: 'spa'
-  }).then(vite => {
-    app.use(vite.middlewares);
+  import('vite').then(({ createServer }) => {
+    createServer({
+      server: { middlewareMode: true },
+      appType: 'spa'
+    }).then(vite => {
+      app.use(vite.middlewares);
+    }).catch(err => {
+      console.error('Vite dev server failed to start:', err);
+    });
   }).catch(err => {
-    console.error('Vite dev server failed to start:', err);
+    console.error('Dynamic Vite import failed:', err);
   });
 } else {
   // Serve production static assets
