@@ -318,8 +318,6 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
       }]);
     }
     
-    setIsCartBottomSheetOpen(true);
-
     confetti({
       particleCount: 50,
       spread: 60,
@@ -497,7 +495,6 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
     }
 
     setSelectedItem(null);
-    setIsCartBottomSheetOpen(true);
     confetti({
       particleCount: 50,
       spread: 60,
