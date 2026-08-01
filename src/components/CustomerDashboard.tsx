@@ -16,7 +16,8 @@ import {
   Flame,
   Compass,
   CheckCircle,
-  Lock
+  Lock,
+  Mic
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -300,6 +301,64 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   const [scannedTableId, setScannedTableId] = useState<string>(tableId || '');
   const [manualTableNumber, setManualTableNumber] = useState('');
   const [isCartBottomSheetOpen, setIsCartBottomSheetOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+
+  const addToCartDirectly = (item: MenuItem, qty: number) => {
+    const existingIndex = cart.findIndex(c => c.menuItem.id === item.id);
+    if (existingIndex > -1) {
+      const newCart = [...cart];
+      newCart[existingIndex].quantity += qty;
+      setCart(newCart);
+    } else {
+      setCart([...cart, {
+        menuItem: item,
+        quantity: qty,
+        selectedCustomizations: [],
+        notes: ''
+      }]);
+    }
+    
+    setIsCartBottomSheetOpen(true);
+
+    confetti({
+      particleCount: 50,
+      spread: 60,
+      origin: { y: 0.8 }
+    });
+  };
+
+  const handleVoiceInput = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice recognition is not supported on this browser. Please try Chrome or Safari.");
+      return;
+    }
+    
+    const recognition = new SpeechRecognition();
+    recognition.lang = lang === 'gu' ? 'gu-IN' : 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    
+    recognition.onstart = () => {
+      setIsRecording(true);
+    };
+    
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error", event.error);
+      setIsRecording(false);
+    };
+    
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+    
+    recognition.onresult = (event: any) => {
+      const speechToText = event.results[0][0].transcript;
+      setChatMessage(speechToText);
+    };
+    
+    recognition.start();
+  };
 
   // Loyalty Program States
   const [phoneLookup, setPhoneLookup] = useState('');
@@ -309,8 +368,12 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   // Chat Widget States
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
-  const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
-    { role: 'assistant', content: 'Namaste! 🙏 Welcome. I am your dining assistant. How may I assist you today?' }
+  const [chatHistory, setChatHistory] = useState<{ 
+    role: 'user' | 'assistant'; 
+    content: string;
+    recommendedItems?: string[];
+  }[]>([
+    { role: 'assistant', content: 'Namaste! 🙏 Welcome. I am your dining assistant. How may I assist you today?', recommendedItems: [] }
   ]);
   const [isAiTyping, setIsAiTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -580,31 +643,69 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
     setIsAiTyping(true);
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: userText,
-          history: chatHistory,
-          tableId: scannedTableId,
-          restaurantId: restaurantId
+          userMessage: userText,
+          restaurantId: restaurantId,
+          tableNumber: scannedTableId,
+          cartItems: cart.map(c => ({ name: c.menuItem.name, quantity: c.quantity, price: c.menuItem.price })),
+          history: chatHistory.map(h => ({ role: h.role, content: h.content }))
         })
       });
       const data = await response.json();
       const replyMessage = data?.reply || (lang === 'gu' ? "ભોજન મદદગાર અસ્થાયી રૂપે અપ્રાપ્ય છે. ☕" : "Assistant temporarily unavailable. ☕");
-      setChatHistory(prev => [...prev, { role: 'assistant', content: replyMessage }]);
       
-      if (data && data.orderPlaced) {
-        setTimeout(() => {
-          setIsChatOpen(false);
-          setActiveTab('status');
-        }, 2500);
-      }
+      // Word-by-word streaming simulation
+      let currentText = '';
+      const words = replyMessage.split(' ');
+      let wordIndex = 0;
+      
+      setChatHistory(prev => [...prev, { role: 'assistant', content: '', recommendedItems: [] }]);
+      
+      const interval = setInterval(() => {
+        if (wordIndex < words.length) {
+          currentText += (wordIndex === 0 ? '' : ' ') + words[wordIndex];
+          setChatHistory(prev => {
+            const nextHistory = [...prev];
+            nextHistory[nextHistory.length - 1] = {
+              role: 'assistant',
+              content: currentText,
+              recommendedItems: data?.recommendedItems || []
+            };
+            return nextHistory;
+          });
+          wordIndex++;
+        } else {
+          clearInterval(interval);
+          setIsAiTyping(false);
+          
+          // Optional Text to Speech
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const cleanText = replyMessage.replace(/[*#]/g, '');
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = lang === 'gu' ? 'gu-IN' : 'en-US';
+            window.speechSynthesis.speak(utterance);
+          }
+
+          // Handle auto adds to cart
+          if (data?.addToCart && data.addToCart.length > 0) {
+            data.addToCart.forEach((item: any) => {
+              const matched = menu.find(m => m.name.toLowerCase() === item.name.toLowerCase() || m.name.toLowerCase().includes(item.name.toLowerCase()));
+              if (matched && matched.isAvailable) {
+                addToCartDirectly(matched, item.quantity || 1);
+              }
+            });
+          }
+        }
+      }, 50);
+
     } catch (e) {
       console.error('Failed to chat:', e);
       const fallbackMsg = lang === 'gu' ? "ભોજન મદદગાર અસ્થાયી રૂપે અપ્રાપ્ય છે. ☕" : "Assistant temporarily unavailable. ☕";
       setChatHistory(prev => [...prev, { role: 'assistant', content: fallbackMsg }]);
-    } finally {
       setIsAiTyping(false);
     }
   };
@@ -932,7 +1033,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
               {chatHistory.map((h, i) => (
                 <div 
                   key={i} 
-                  className={`flex ${h.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex flex-col ${h.role === 'user' ? 'items-end' : 'items-start'}`}
                 >
                   <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs shadow-sm leading-relaxed ${
                     h.role === 'user' 
@@ -942,6 +1043,37 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                     {h.content.split('\n').map((line, idx) => (
                       <p key={idx} className={idx > 0 ? 'mt-1' : ''}>{line}</p>
                     ))}
+                    
+                    {/* Render action buttons for recommended items */}
+                    {h.recommendedItems && h.recommendedItems.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-2">
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Suggested Dishes:</p>
+                        <div className="flex flex-col gap-1.5 w-full">
+                          {h.recommendedItems.map((name: string, idx: number) => {
+                            const matchedItem = menu.find(m => m.name.toLowerCase() === name.toLowerCase() || m.name.toLowerCase().includes(name.toLowerCase()));
+                            if (!matchedItem) return null;
+                            return (
+                              <div key={idx} className="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-black/5 gap-3">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className={`w-2 h-2 border rounded flex items-center justify-center shrink-0 ${
+                                    matchedItem.isVeg ? 'border-green-600' : 'border-red-600'
+                                  }`}>
+                                    <span className={`w-1 h-1 rounded-full ${matchedItem.isVeg ? 'bg-green-600' : 'bg-red-600'}`}></span>
+                                  </span>
+                                  <span className="text-[10px] font-bold text-slate-700 truncate">{translateItemName(matchedItem, lang)} (₹{matchedItem.price})</span>
+                                </div>
+                                <button
+                                  onClick={() => addToCartDirectly(matchedItem, 1)}
+                                  className="bg-primary-500 hover:bg-primary-600 text-white text-[9px] font-black px-2.5 py-1.5 rounded-lg shadow-sm active:scale-95 transition-all cursor-pointer shrink-0"
+                                >
+                                  + {lang === 'gu' ? 'કાર્ટ' : 'Cart'}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -966,6 +1098,18 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                 onKeyDown={e => { if (e.key === 'Enter') sendChatMessage(); }}
                 className="grow px-4 py-3 bg-slate-50 border border-black/5 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
               />
+              <button 
+                onClick={handleVoiceInput}
+                disabled={isAiTyping}
+                className={`p-3 rounded-xl border transition-all hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer shadow-sm ${
+                  isRecording 
+                    ? 'bg-red-500 border-red-500 text-white animate-pulse' 
+                    : 'bg-slate-50 border-black/5 text-slate-500 hover:bg-slate-100'
+                }`}
+                title="Voice Input"
+              >
+                <Mic className="w-4.5 h-4.5" />
+              </button>
               <button 
                 onClick={sendChatMessage}
                 disabled={!chatMessage.trim() || isAiTyping}

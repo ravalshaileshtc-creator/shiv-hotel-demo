@@ -290,9 +290,9 @@ function executePlaceOrder(items: any[], tableId: string) {
 }
 
 // Google Gemini AI chat endpoint
-app.post('/api/chat', async (req, res) => {
-  const { message, history, tableId, restaurantId } = req.body;
-  
+app.post('/api/ai-chat', async (req, res) => {
+  const { userMessage, restaurantId, tableNumber, cartItems, history } = req.body;
+
   let activeMenu = dbState.menu;
   let activeSettings = dbState.settings;
 
@@ -311,120 +311,113 @@ app.post('/api/chat', async (req, res) => {
       console.error(`Failed to load menu/settings for restaurant ${restaurantId} from Firestore:`, e);
     }
   }
-  
+
   // Construct menu text context for Gemini
-  const menuContext = activeMenu
+  const menuText = activeMenu
     .filter(item => item.isAvailable)
-    .map(item => `- ${item.name} (${item.category}, ${activeSettings.currencySymbol || '₹'}${item.price}): ${item.description || ''}. Customization options: ${(item.customizations || []).join(', ')}`)
+    .map(item => `- ${item.name} (${item.category}, ₹${item.price}): ${item.description || ''}. Vegetarian: ${item.isVeg ? 'Yes' : 'No'}. Spicy: ${item.spicyLevel || 'Medium'}.`)
     .join('\n');
 
-  const systemPrompt = `You are a warm, extremely polite, and helpful AI Dining Assistant named "Shiv Hotel AI Assistant" at "${activeSettings.restaurantName || 'Shiv Hotel'}".
-We are a premium restaurant waiter and food ordering assistant located in Gujarat, India.
+  const systemInstruction = `You are "Shiv Hotel AI Assistant", an expert AI Chef Assistant at our premium dining restaurant in Gujarat, India.
+We only serve food from our available menu.
 
-Our restaurant details:
-Address: ${activeSettings.address || 'Gujarat, India'}
-Tax Rate: ${activeSettings.taxPercentage || 5}% Service Fee.
-Currency: ${activeSettings.currencySymbol || '₹'}
+Here is our current active menu list:
+${menuText}
 
-Here is our current active menu:
-${menuContext}
-
-Guidelines:
-1. Help customers choose food, explain menu items, and suggest delicious Gujarati and Indian dishes from our menu.
-2. Answer precisely in the customer's selected language (Gujarati, Hindi, or English).
-3. Do NOT make up menu items. Only recommend items from our actual menu list.
-4. Never mention other restaurants, foreign dishes (like truffle tagliatelle, burgers, or french fries) unless they are explicitly present on our menu list. Focus heavily on Gujarati & Indian flavors.
-5. Speak in first-person as a polite waiter (e.g., "We offer...", "Our chef recommends...").
-6. If the customer wants to order or add items to their table/cart, invoke the "placeOrder" tool/function. Make sure you extract the correct menu names and quantities.`;
+Rules:
+1. Only answer restaurant and food related questions. Never discuss other topics or recommend items not listed on the active menu.
+2. Recommend available menu items based on customer taste, budget, or spice level.
+3. Suggest perfect combos (e.g. Dal Fry + Jeera Rice or Paneer Butter Masala + Garlic Naan).
+4. Understand Gujarati, Hindi, and English, and ALWAYS reply in the language selected by the customer.
+5. If the customer wants to add/order items (e.g. "Add Paneer Pizza", "Ek lassi add karo", "I want to order paneer tikka"), populate the "addToCart" array with the exact dish name and quantity.
+6. Return your response in JSON format matching the schema.`;
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.log('No GEMINI_API_KEY found, using mock agent response.');
-    const userMsg = message.toLowerCase();
-    let reply = '';
-    
-    if (userMsg.includes('hello') || userMsg.includes('hi') || userMsg.includes('hey')) {
-      reply = `Namaste! Welcome to **${activeSettings.restaurantName || 'Shiv Hotel'}**! 🍽️ I am your Shiv Hotel AI Assistant. How can I help you today? I can recommend dishes, explain our menu, or help place your order!`;
-    } else if (userMsg.includes('veg') || userMsg.includes('vegetarian')) {
-      const vegItems = activeMenu.filter(i => i.isVeg && i.isAvailable).map(i => `• **${i.name}** (${activeSettings.currencySymbol || '₹'}${i.price})`).slice(0, 4).join('\n');
-      reply = `We serve 100% delicious vegetarian and Gujarati special dishes! Here are some of our guest favorites:\n\n${vegItems || '• Butter Roti\n• Paneer Chilli\n• Dal Fry + Tawa Roti Combo'}\n\nWould you like me to add any of these to your cart? 🍛`;
-    } else if (userMsg.includes('recommend') || userMsg.includes('best') || userMsg.includes('special')) {
-      reply = `I highly recommend starting with our delicious **Paneer Chilli Dry** or **Vegetable Pepper Salt** 🌶️, followed by our comforting **Dal Fry** with hot **Tandoori Roti** or **Jeera Rice** 🍛. To drink, our fresh **Butter Milk** (છાશ) or sweet **Lassi** is a must-have!`;
-    } else if (userMsg.includes('sweet') || userMsg.includes('dessert') || userMsg.includes('lassi')) {
-      reply = `To satisfy your sweet tooth, I highly recommend our traditional **Dry Fruit Lassi** 🥛 or hot **Gulab Jamun**! They are the perfect way to finish a rich Indian meal!`;
-    } else if (userMsg.includes('drink') || userMsg.includes('beverage') || userMsg.includes('cool')) {
-      reply = `We offer refreshing beverages! You must try our thick **Dry Fruit Lassi** or a cold glass of spiced **Butter Milk** (છાશ) 🥛!`;
-    } else if (userMsg.includes('order') || userMsg.includes('buy') || userMsg.includes('add')) {
-      // Mock order placement trigger
-      const firstMenu = activeMenu[0]?.name || 'Dal Fry + Tawa Roti Combo';
-      const orderResult = executePlaceOrder([{ name: firstMenu, quantity: 1 }], tableId || 'table-1');
-      if (orderResult.success) {
-        reply = `🍽️ **Order Placed via AI!**\n\nI have placed an order for **1x ${firstMenu}** on your table. You can see it preparing now!`;
-        res.json({ reply, orderPlaced: true });
-      } else {
-        reply = `Could not place order: ${orderResult.error}`;
-        res.json({ reply });
-      }
-      return;
-    } else {
-      reply = `That sounds delicious! If you're looking for recommendations, our Chef's specials are the hot **Dal Fry + Tawa Roti Combo** or crispy **Paneer Chilli**. Let me know if you would like me to add anything to your cart! 🍛`;
-    }
-    
-    setTimeout(() => {
-      res.json({ reply });
-    }, 800);
+    console.log('No GEMINI_API_KEY found. Returning fallback/mock response.');
+    res.json({
+      reply: "AI Chef temporarily unavailable. Please configure GEMINI_API_KEY in the server environment.",
+      recommendedItems: [],
+      addToCart: []
+    });
     return;
   }
 
   try {
     const ai = new GoogleGenerativeAI(apiKey);
     const model = ai.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
-      tools: [{ functionDeclarations: [placeOrderDeclaration] }]
-    });
-    
-    const contents = history.map((h: any) => ({
-      role: h.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: h.content }]
-    }));
-    
-    contents.push({
-      role: 'user',
-      parts: [{ text: `${systemPrompt}\n\nUser request: ${message}` }]
-    });
-
-    const result = await model.generateContent({ contents });
-    const response = result.response;
-    
-    const replyText = typeof response.text === 'function' ? response.text() : ((response as any).text || '');
-    const functionCalls = typeof response.functionCalls === 'function' ? response.functionCalls() : ((response as any).functionCalls || []);
-
-    if (functionCalls && functionCalls.length > 0) {
-      const call = functionCalls[0];
-      if (call.name === 'placeOrder') {
-        const args = call.args as any;
-        const targetTable = args.tableId || tableId || 'table-1';
-        const orderResult = executePlaceOrder(args.items, targetTable);
-        
-        if (orderResult.success) {
-          res.json({
-            reply: `🍽️ **Order Placed via AI!**\n\nI have successfully placed the order for:\n${args.items.map((i: any) => `• ${i.quantity}x **${i.name}**`).join('\n')}\non your table! It has been sent directly to the kitchen.`,
-            orderPlaced: true
-          });
-        } else {
-          res.json({
-            reply: `⚠️ I tried to place the order, but encountered an issue: ${orderResult.error}. Please confirm the dish names and table scanning!`
-          });
+      model: 'gemini-2.5-flash',
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            reply: {
+              type: "STRING",
+              description: "Polite waiter response explaining dishes, answers, suggestions. Explain the menu items. Use customer's language (English, Gujarati, or Hindi)."
+            },
+            recommendedItems: {
+              type: "ARRAY",
+              items: {
+                type: "STRING"
+              },
+              description: "Exact name of menu items recommended (e.g. ['Tava Roti', 'Paneer Butter Masala'])."
+            },
+            addToCart: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                properties: {
+                  name: { type: "STRING", description: "Exact name of the menu item to add." },
+                  quantity: { type: "INTEGER", description: "Quantity to add." }
+                },
+                required: ["name"]
+              },
+              description: "Items that the user explicitly asked to add or order."
+            }
+          },
+          required: ["reply", "recommendedItems", "addToCart"]
         }
-        return;
       }
-    }
+    });
 
-    res.json({ reply: replyText || "I apologize, but I'm having trouble processing that request right now. How else can I assist you with our menu?" });
+    let prompt = `${systemInstruction}\n\n`;
+    if (history && history.length > 0) {
+      prompt += "Conversation history:\n";
+      history.forEach((h: any) => {
+        prompt += `${h.role === 'user' ? 'Customer' : 'Assistant'}: ${h.content}\n`;
+      });
+    }
+    prompt += `Customer Current Cart: ${JSON.stringify(cartItems)}\nTable: ${tableNumber || 'Guest'}\nCustomer: ${userMessage}\nAssistant:`;
+
+    const result = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }] });
+    const responseText = result.response.text();
+    const jsonResponse = JSON.parse(responseText);
+
+    res.json(jsonResponse);
   } catch (error: any) {
     console.error('Gemini AI API Error:', error);
-    res.status(500).json({ error: 'Failed to generate dining recommendation.' });
+    res.json({
+      reply: "AI Chef temporarily unavailable. Please try again.",
+      recommendedItems: [],
+      addToCart: []
+    });
   }
+});
+
+// Expose legacy path pointing to the new implementation
+app.post('/api/chat', async (req, res) => {
+  // Map parameters to match new POST /api/ai-chat schema
+  const { message, history, tableId, restaurantId } = req.body;
+  req.url = '/api/ai-chat';
+  req.body = {
+    userMessage: message,
+    restaurantId,
+    tableNumber: tableId,
+    cartItems: [],
+    history
+  };
+  app.handle(req, res);
 });
 
 // Setup Vite dev server or serve static production bundle
