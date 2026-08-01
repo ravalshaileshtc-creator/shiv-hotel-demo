@@ -1382,7 +1382,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
         </button>
       </div>
 
-      /* Bottom Navigation Bar */
+      {/* Bottom Navigation Bar */}
       <nav className="fixed bottom-0 left-0 w-full z-50 max-w-md mx-auto translate-x-[-50%] left-1/2">
         <div className="bg-white/90 backdrop-blur-xl rounded-t-2xl border-t border-black/5 shadow-[0_-4px_24px_rgba(0,0,0,0.05)] flex justify-around items-center px-4 pb-6 pt-3 h-20">
           <button 
@@ -1544,7 +1544,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
         )}
       </AnimatePresence>
 
-      /* CHATBOT DRAWER */
+      {/* CHATBOT DRAWER */}
       <AnimatePresence>
         {isChatOpen && (
           <div className="fixed inset-0 z-50 flex justify-end bg-black/40">
