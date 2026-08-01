@@ -3,7 +3,6 @@ import { type MenuItem, type Table, type Order, type Settings, type Customer, su
 import { 
   Search, 
   ShoppingBag, 
-  MessageSquare, 
   Sparkles, 
   User, 
   X, 
@@ -14,13 +13,10 @@ import {
   Send,
   Loader2,
   MapPin,
-  QrCode,
   Flame,
   Compass,
-  Lightbulb,
   CheckCircle,
-  Lock,
-  Keyboard
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -42,6 +38,9 @@ interface CartItem {
 const translations = {
   en: {
     menu: "Menu",
+    aiChef: "AI Chef",
+    orders: "Orders",
+    profile: "Profile",
     scan: "Scan",
     cart: "Cart",
     status: "Status",
@@ -108,6 +107,9 @@ const translations = {
   },
   gu: {
     menu: "મેનૂ",
+    aiChef: "AI શેફ",
+    orders: "ઓર્ડર્સ",
+    profile: "પ્રોફાઇલ",
     scan: "સ્કેન",
     cart: "કાર્ટ",
     status: "ઓર્ડર સ્થિતિ",
@@ -275,8 +277,8 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
     loadTenant();
   }, [restaurantId]);
 
-  // Navigation tab: 'menu' | 'scan' | 'cart' | 'status'
-  const [activeTab, setActiveTab] = useState<'menu' | 'scan' | 'cart' | 'status'>('menu');
+  // Navigation tab: 'menu' | 'chef' | 'status' | 'profile'
+  const [activeTab, setActiveTab] = useState<'menu' | 'chef' | 'status' | 'profile'>('menu');
 
   // UI States
   const [searchQuery, setSearchQuery] = useState('');
@@ -297,7 +299,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   // Table Scan State (if no tableId is set originally in route)
   const [scannedTableId, setScannedTableId] = useState<string>(tableId || '');
   const [manualTableNumber, setManualTableNumber] = useState('');
-  const [isManualTableInputOpen, setIsManualTableInputOpen] = useState(false);
+  const [isCartBottomSheetOpen, setIsCartBottomSheetOpen] = useState(false);
 
   // Loyalty Program States
   const [phoneLookup, setPhoneLookup] = useState('');
@@ -360,10 +362,10 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistory, isChatOpen]);
 
-  // Auto-route to scan screen if no table selected
+  // Auto-route to profile screen if no table selected
   useEffect(() => {
     if (!scannedTableId) {
-      setActiveTab('scan');
+      setActiveTab('profile');
     }
   }, [scannedTableId]);
 
@@ -432,6 +434,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
     }
 
     setSelectedItem(null);
+    setIsCartBottomSheetOpen(true);
     confetti({
       particleCount: 50,
       spread: 60,
@@ -534,6 +537,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
       await updateState({ orders: updatedOrders, tables: updatedTables });
       setCart([]);
       setRedeemPoints(false);
+      setIsCartBottomSheetOpen(false);
       setActiveTab('status'); // transition to order status tracker!
 
       confetti({
@@ -555,7 +559,6 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
     
     if (matchedTable) {
       setScannedTableId(matchedTable.id);
-      setIsManualTableInputOpen(false);
       setManualTableNumber('');
       setActiveTab('menu');
       confetti({
@@ -718,7 +721,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
               {lang === 'en' ? 'ગુજરાતી' : 'English'}
             </button>
             <button 
-              onClick={() => setActiveTab('scan')}
+              onClick={() => setActiveTab('profile')}
               className="text-primary-500 hover:opacity-85 transition-opacity p-1.5 rounded-full bg-primary-50/50 border border-primary-100/30 cursor-pointer shadow-sm"
               title="Scan QR Code"
             >
@@ -908,310 +911,204 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
           </div>
         )}
 
-        {/* TAB 2: CAMERA QR SCANNER */}
-        {activeTab === 'scan' && (
-          <div className="relative flex flex-col items-center pt-2 gap-6 w-full">
-            
-            {/* Mock camera view frame */}
-            <div className="w-full h-80 rounded-3xl overflow-hidden relative border border-black/5 shadow-lg">
-              <div 
-                className="w-full h-full bg-cover bg-center opacity-85" 
-                style={{ backgroundImage: "url('https://images.unsplash.com/photo-1544025162-d76694265947?w=600')" }}
-              ></div>
-              <div className="absolute inset-0 bg-black/10"></div>
-              
-              {/* Laser animation */}
-              <div className="scan-laser top-10"></div>
-              
-              {/* Central viewfinder bracket box with gold corners */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-48 h-48 scanner-frame rounded-[24px] flex items-center justify-center relative">
-                  {/* Gold Corner Outlines */}
-                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary-500 rounded-tl-xl"></div>
-                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary-500 rounded-tr-xl"></div>
-                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary-500 rounded-bl-xl"></div>
-                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary-500 rounded-br-xl"></div>
-
-                  <div className="glass-card px-4 py-2 rounded-xl text-primary-500 font-bold text-xs flex items-center gap-1.5 shadow-sm animate-pulse">
-                    <QrCode className="w-4 h-4 shrink-0" />
-                    <span>Scanning...</span>
-                  </div>
+        {/* TAB 2: AI CHEF WIDGET */}
+        {activeTab === 'chef' && (
+          <div className="flex flex-col h-[calc(100vh-14rem)] bg-white rounded-3xl border border-black/5 shadow-sm overflow-hidden mt-2">
+            {/* Header */}
+            <div className="p-5 border-b border-white/5 flex items-center justify-between bg-[#1c1b1b] text-white">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-primary-500/20 border border-primary-500/30 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-primary-500 animate-pulse" />
+                </div>
+                <div>
+                  <h2 className="text-xs font-bold font-display uppercase tracking-wider text-primary-500">{settings?.restaurantName || 'Shiv Hotel'} AI Waiter</h2>
+                  <p className="text-[9px] text-slate-400 font-medium">Concierge Service & Ordering</p>
                 </div>
               </div>
             </div>
 
-            {/* Instruction labels */}
-            <div className="text-center space-y-1.5">
-              <h2 className="font-display text-base font-bold text-slate-800">Align QR Code</h2>
-              <p className="text-[10px] text-slate-500 max-w-[240px] mx-auto leading-relaxed">
-                Scan the hotel insignia on your table to unlock your exclusive digital concierge.
-              </p>
+            {/* Chat history */}
+            <div className="grow overflow-y-auto p-5 flex flex-col gap-4 bg-slate-50/30">
+              {chatHistory.map((h, i) => (
+                <div 
+                  key={i} 
+                  className={`flex ${h.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs shadow-sm leading-relaxed ${
+                    h.role === 'user' 
+                      ? 'bg-primary-500 text-white rounded-tr-none' 
+                      : 'bg-white text-gray-800 rounded-tl-none border border-primary-500/10'
+                  }`}>
+                    {h.content.split('\n').map((line, idx) => (
+                      <p key={idx} className={idx > 0 ? 'mt-1' : ''}>{line}</p>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {isAiTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-white text-gray-800 rounded-2xl rounded-tl-none border border-primary-500/10 px-4 py-3 shadow-sm flex items-center gap-1.5">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary-500" />
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Chef is thinking...</span>
+                  </div>
+                </div>
+              )}
+              <div ref={chatEndRef} />
             </div>
 
-            {/* Enter Table Number manually */}
-            <div className="w-full">
-              {isManualTableInputOpen ? (
+            {/* Input block */}
+            <div className="p-4 border-t border-black/5 flex items-center gap-3 bg-white">
+              <input 
+                type="text" 
+                placeholder={lang === 'gu' ? "અહીં પૂછો..." : "Ask for recommendations, descriptions..."}
+                value={chatMessage}
+                onChange={e => setChatMessage(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') sendChatMessage(); }}
+                className="grow px-4 py-3 bg-slate-50 border border-black/5 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
+              />
+              <button 
+                onClick={sendChatMessage}
+                disabled={!chatMessage.trim() || isAiTyping}
+                className="bg-primary-500 disabled:bg-slate-200 text-white p-3 rounded-xl hover:bg-primary-600 transition-all hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer shadow-md shadow-primary-500/10"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+      {/* TAB 3: PROFILE SETTINGS */}
+        {activeTab === 'profile' && (
+          <div className="flex flex-col gap-6 pb-12 mt-2">
+            
+            {/* Profile Avatar Card */}
+            <div className="glass-card p-6 rounded-[32px] flex items-center gap-4 border border-black/5 shadow-sm">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-primary-500 to-amber-400 flex items-center justify-center font-display font-bold text-white text-xl shadow-md border-2 border-white shadow-primary-500/20">
+                {activeCustomer ? activeCustomer.name.charAt(0).toUpperCase() : 'G'}
+              </div>
+              <div>
+                <h2 className="font-display font-bold text-base text-slate-800">
+                  {activeCustomer ? activeCustomer.name : (lang === 'gu' ? 'મહેમાન ગ્રાહક' : 'Guest Diner')}
+                </h2>
+                <span className="text-[10px] font-bold text-primary-500 bg-primary-50 border border-primary-100/50 px-2.5 py-1 rounded-full uppercase tracking-wider mt-1 inline-block">
+                  Table {activeTable ? activeTable.name : 'Not Set'}
+                </span>
+              </div>
+            </div>
+
+            {/* Table QR Scanner Warning / Action */}
+            {!scannedTableId && (
+              <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 rounded-3xl p-5 shadow-sm space-y-3.5 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-2xl bg-red-100 flex items-center justify-center shrink-0">
+                    <Lock className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xs text-red-800">{lang === 'gu' ? 'ટેબલ સ્કેન કરો' : 'Table QR Required'}</h3>
+                    <p className="text-[10px] text-red-700/80 mt-0.5">{lang === 'gu' ? 'ઓર્ડર કરવા માટે ટેબલ નંબર દાખલ કરો.' : 'Please enter table number to open digital ordering.'}</p>
+                  </div>
+                </div>
+                
                 <div className="flex gap-2">
                   <input
                     type="text"
                     maxLength={3}
-                    placeholder="E.g. 3"
+                    placeholder="Enter Table (e.g. 2)"
                     value={manualTableNumber}
                     onChange={e => setManualTableNumber(e.target.value.replace(/\D/g, ''))}
-                    className="grow px-4 py-2.5 rounded-2xl border border-black/5 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs bg-white shadow-sm"
+                    className="grow px-4 py-2.5 rounded-2xl border border-red-200 focus:outline-none focus:ring-1 focus:ring-red-500 text-xs bg-white shadow-sm"
                   />
                   <button 
                     onClick={handleManualTableSubmit}
-                    className="bg-primary-500 hover:bg-primary-600 text-white font-bold px-5 py-2.5 rounded-2xl text-xs shadow-sm cursor-pointer transition-all active:scale-95"
+                    className="bg-red-500 hover:bg-red-600 text-white font-bold px-5 py-2.5 rounded-2xl text-xs shadow-sm cursor-pointer transition-all active:scale-95"
                   >
-                    Go
-                  </button>
-                  <button 
-                    onClick={() => setIsManualTableInputOpen(false)}
-                    className="p-2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
+                    Set Table
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* Loyalty points block */}
+            <div className="glass-card p-6 rounded-[32px] border border-black/5 shadow-sm space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xs font-bold text-slate-800">{lang === 'gu' ? 'લોયલ્ટી ઇનામો' : 'Loyalty Rewards'}</h3>
+                <Sparkles className="w-4 h-4 text-primary-500" />
+              </div>
+              
+              {!activeCustomer ? (
+                <div className="space-y-3">
+                  <p className="text-[10px] text-slate-500 leading-relaxed">
+                    {lang === 'gu' ? 'તમારો ફોન નંબર લિંક કરો અને દરેક ઓર્ડર પર ૧૦% કેશબેક પોઈન્ટ્સ મેળવો!' : 'Link your phone number to earn 10% cashback points on every order!'}
+                  </p>
+                  <div className="flex gap-2">
+                    <input 
+                      type="tel"
+                      maxLength={10}
+                      placeholder="10-digit Phone"
+                      value={phoneLookup}
+                      onChange={e => setPhoneLookup(e.target.value.replace(/\D/g, ''))}
+                      className="grow px-4 py-2.5 rounded-2xl border border-black/5 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+                    />
+                    <button 
+                      onClick={handleLoyaltyLookup}
+                      disabled={phoneLookup.length < 10}
+                      className="bg-primary-500 disabled:bg-slate-200 text-white text-xs px-4 py-2.5 rounded-2xl font-bold hover:bg-primary-600 cursor-pointer transition-colors"
+                    >
+                      {lang === 'gu' ? 'લિંક કરો' : 'Link'}
+                    </button>
+                  </div>
+                </div>
               ) : (
-                <button 
-                  onClick={() => setIsManualTableInputOpen(true)}
-                  className="glass-card w-full py-4 rounded-2xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform font-bold text-xs text-primary-500 cursor-pointer shadow-sm border border-black/5"
-                >
-                  <Keyboard className="w-4 h-4 text-primary-500" />
-                  <span>Enter Table Number Manually</span>
-                </button>
+                <div className="flex justify-between items-center bg-primary-50/50 p-4 rounded-2xl border border-primary-100/30">
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-500">{lang === 'gu' ? 'ઉપલબ્ધ પોઇન્ટ્સ' : 'Available Points'}</p>
+                    <p className="text-xl font-black text-primary-500 mt-0.5">{activeCustomer.points}</p>
+                  </div>
+                  <button 
+                    onClick={() => { setActiveCustomer(null); setRedeemPoints(false); }}
+                    className="text-xs text-slate-400 hover:text-red-500 font-bold cursor-pointer transition-colors"
+                  >
+                    {lang === 'gu' ? 'ડિસ્કનેક્ટ' : 'Disconnect'}
+                  </button>
+                </div>
               )}
             </div>
 
-            {/* Tips Card */}
-            <section className="w-full mt-6 pb-12">
-              <div className="glass-card p-5 rounded-3xl shadow-sm flex gap-4 border border-white/50">
-                <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
-                  <Lightbulb className="w-5 h-5 text-primary-500" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-800">Tips for Scanning</h4>
-                  <p className="text-[11px] text-[#546067] mt-1 leading-relaxed">
-                    Ensure there is enough ambient lighting and hold your phone stable for a quick, automatic scan.
-                  </p>
-                </div>
-              </div>
-            </section>
-          </div>
-        )}
-
-        {/* TAB 3: YOUR CART CHECKOUT */}
-        {activeTab === 'cart' && (
-          <div className="flex flex-col gap-6 pb-12">
-            
-            {/* Loyalty Check header */}
-            {!activeCustomer ? (
-              <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-amber-100/50 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-4">
-                <div className="flex gap-2.5">
-                  <div className="p-2 bg-amber-100 rounded-xl flex items-center justify-center shrink-0"><Sparkles className="w-4 h-4 text-amber-600" /></div>
-                  <div>
-                    <h3 className="text-xs font-bold text-slate-800">Rewards Club</h3>
-                    <p className="text-[10px] text-[#546067]">Verify phone to redeem points.</p>
-                  </div>
-                </div>
-                <div className="flex gap-1.5">
-                  <input 
-                    type="tel"
-                    maxLength={10}
-                    placeholder="Phone"
-                    value={phoneLookup}
-                    onChange={e => setPhoneLookup(e.target.value.replace(/\D/g, ''))}
-                    className="w-24 px-2 py-1.5 rounded-xl border border-gray-200 text-[10px] focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
-                  />
-                  <button 
-                    onClick={handleLoyaltyLookup}
-                    disabled={phoneLookup.length < 10}
-                    className="bg-primary-500 disabled:bg-gray-300 text-white text-[10px] px-2.5 py-1 rounded-xl font-bold hover:bg-primary-600 cursor-pointer"
-                  >
-                    Join
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center font-bold text-green-700">
-                    <User className="w-4 h-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-bold text-gray-800">{activeCustomer.name}</p>
-                    <p className="text-[10px] text-green-700 font-semibold">{activeCustomer.points} Points Available</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => { setActiveCustomer(null); setRedeemPoints(false); }}
-                  className="text-gray-400 hover:text-gray-600 cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
-            {/* Dining Mode tabs */}
-            <section className="space-y-2">
-              <h2 className="text-[10px] font-bold text-[#546067] uppercase tracking-widest">Dining Mode</h2>
-              <div className="glass-card p-1 rounded-2xl flex border border-white/50">
-                <button 
-                  onClick={() => setDiningMode('Dine In')}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    diningMode === 'Dine In' 
-                      ? 'bg-primary-500 text-white shadow-md' 
-                      : 'text-[#546067] hover:bg-slate-100/50'
-                  }`}
-                >
-                  Dine In
-                </button>
-                <button 
-                  onClick={() => setDiningMode('Take Away')}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    diningMode === 'Take Away' 
-                      ? 'bg-primary-500 text-white shadow-md' 
-                      : 'text-[#546067] hover:bg-slate-100/50'
-                  }`}
-                >
-                  Take Away
-                </button>
-              </div>
-            </section>
-
-            {/* Cart list items */}
-            <section className="space-y-3">
-              <h2 className="text-[10px] font-bold text-[#546067] uppercase tracking-widest">Order Details</h2>
+            {/* Quick Actions */}
+            <div className="glass-card p-6 rounded-[32px] border border-black/5 shadow-sm space-y-4">
+              <h3 className="text-xs font-bold text-slate-800">{lang === 'gu' ? 'ઝડપી સેવાઓ' : 'Concierge Services'}</h3>
               
-              {cart.length > 0 ? (
-                cart.map((item, index) => (
-                  <div 
-                    key={index}
-                    className="glass-card p-4 rounded-3xl flex gap-3 shadow-[0px_20px_20px_0px_rgba(0,0,0,0.05)] border border-white/50"
-                  >
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-slate-100 bg-slate-50">
-                      <img src={item.menuItem.image} alt={translateItemName(item.menuItem, lang)} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex flex-col justify-between grow">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-extrabold text-xs text-slate-800">{translateItemName(item.menuItem, lang)}</h3>
-                          {item.selectedCustomizations.length > 0 && (
-                            <p className="text-[9px] text-[#546067] font-medium mt-0.5">{item.selectedCustomizations.join(', ')}</p>
-                          )}
-                          {item.notes && (
-                            <p className="text-[9px] text-gray-400 italic mt-0.5">"{item.notes}"</p>
-                          )}
-                        </div>
-                        <span className="font-extrabold text-xs text-primary-500">
-                          {settings.currencySymbol}{item.menuItem.price * item.quantity}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 mt-2">
-                        <button 
-                          onClick={() => updateCartQty(index, -1)}
-                          className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-primary-500 cursor-pointer"
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <span className="w-5 text-center text-xs font-bold text-slate-800">{item.quantity}</span>
-                        <button 
-                          onClick={() => updateCartQty(index, 1)}
-                          className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-primary-500 cursor-pointer"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-10 flex flex-col items-center gap-2">
-                  <Utensils className="w-8 h-8 text-gray-300" />
-                  <p className="text-xs font-bold text-gray-400">Cart is empty.</p>
-                  <button 
-                    onClick={() => setActiveTab('menu')}
-                    className="text-xs font-bold text-primary-500 cursor-pointer"
-                  >
-                    Browse Menu
-                  </button>
-                </div>
-              )}
-            </section>
-
-            {/* Promo Code section */}
-            <section className="space-y-1.5">
-              <h2 className="text-[10px] font-bold text-[#546067] uppercase tracking-widest">Rewards</h2>
-              <div className="glass-card p-4 rounded-3xl flex items-center justify-between border border-white/50">
-                <div className="flex items-center gap-2.5">
-                  <Sparkles className="w-4 h-4 text-primary-500" />
-                  <span className="font-bold text-xs text-slate-800">LUMIERE_WELCOME</span>
-                </div>
-                <button 
-                  onClick={() => setApplyPromoCode(!applyPromoCode)}
-                  className="text-primary-500 font-bold text-xs cursor-pointer hover:underline"
+              <div className="grid grid-cols-2 gap-3.5">
+                <button
+                  onClick={toggleLanguage}
+                  className="p-4 rounded-2xl bg-slate-50 hover:bg-slate-100/50 text-left border border-black/5 transition-all active:scale-95 cursor-pointer"
                 >
-                  {applyPromoCode ? 'Applied' : 'Apply'}
+                  <Compass className="w-5 h-5 text-primary-500 mb-2" />
+                  <p className="text-xs font-bold text-slate-800">{lang === 'en' ? 'ગુજરાતી' : 'English'}</p>
+                  <p className="text-[9px] text-slate-400 mt-0.5">{lang === 'en' ? 'Switch Language' : 'ભાષા બદલો'}</p>
+                </button>
+
+                <button
+                  onClick={async () => {
+                    if (!scannedTableId) {
+                      alert("Please select a table first!");
+                      return;
+                    }
+                    alert(lang === 'gu' ? "વેઇટરને બોલાવવામાં આવ્યા છે! 🛎️" : "Waiter has been called! 🛎️");
+                  }}
+                  className="p-4 rounded-2xl bg-slate-50 hover:bg-slate-100/50 text-left border border-black/5 transition-all active:scale-95 cursor-pointer"
+                >
+                  <Utensils className="w-5 h-5 text-primary-500 mb-2" />
+                  <p className="text-xs font-bold text-slate-800">{lang === 'gu' ? 'વેઇટર બોલાવો' : 'Call Waiter'}</p>
+                  <p className="text-[9px] text-slate-400 mt-0.5">{lang === 'gu' ? 'ટેબલ પર સેવાની વિનંતી' : 'Request assistance'}</p>
                 </button>
               </div>
-            </section>
+            </div>
 
-            {/* Bill checkout Calculations */}
-            {cart.length > 0 && (
-              <section className="glass-card rounded-[32px] p-5 shadow-[0px_25px_30px_rgba(0,0,0,0.05)] border border-white/60">
-                <div className="space-y-2 mb-4 border-b border-gray-100/60 pb-4">
-                  <div className="flex justify-between items-center text-xs text-[#546067]">
-                    <span>Subtotal</span>
-                    <span className="font-bold text-slate-800">{settings.currencySymbol}{cartSubtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs text-[#546067]">
-                    <span>Service Fee (10%)</span>
-                    <span className="font-bold text-slate-800">{settings.currencySymbol}{serviceFee.toFixed(2)}</span>
-                  </div>
-                  
-                  {/* Applied discounts breakdown */}
-                  {promoDiscount > 0 && (
-                    <div className="flex justify-between items-center text-xs text-green-600">
-                      <span>Promo Discount (10%)</span>
-                      <span className="font-bold">-{settings.currencySymbol}{promoDiscount.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {activeCustomer && activeCustomer.points > 0 && (
-                    <div className="flex justify-between items-center text-xs pt-1.5 border-t border-dashed border-gray-200">
-                      <label className="flex items-center gap-1.5 font-bold text-green-700 cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={redeemPoints}
-                          onChange={e => setRedeemPoints(e.target.checked)}
-                          className="accent-green-600"
-                        />
-                        Redeem {maxRedeemablePoints} Points
-                      </label>
-                      <span className="font-extrabold text-green-700">-{settings.currencySymbol}{loyaltyPointsDiscount.toFixed(2)}</span>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center pt-2.5 border-t border-gray-100 text-sm font-extrabold text-slate-900">
-                    <span>Total</span>
-                    <span className="text-primary-500 font-black">{settings.currencySymbol}{cartGrandTotal.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <button 
-                  onClick={placeOrder}
-                  className="w-full bg-primary-500 hover:bg-primary-600 text-white h-12 rounded-full font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary-500/10 flex items-center justify-center gap-2 cursor-pointer transition-colors active:scale-[0.98]"
-                >
-                  Place Order
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </section>
-            )}
           </div>
         )}
 
-        {/* TAB 4: ORDER STATUS TRACKER */}
+      {/* TAB 4: ORDER STATUS TRACKER */}
         {activeTab === 'status' && (
           <div className="flex flex-col gap-6 pb-12">
             {activeOrder ? (
@@ -1371,16 +1268,29 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
 
       </main>
 
-      {/* Floating AI Chat Assistant Trigger */}
-      <div className="fixed bottom-24 right-6 z-40">
-        <button
-          onClick={() => setIsChatOpen(true)}
-          className="w-14 h-14 rounded-full bg-gradient-to-tr from-primary-600 to-amber-500 hover:from-primary-500 hover:to-amber-400 text-white flex items-center justify-center shadow-lg shadow-primary-500/30 hover:scale-105 active:scale-95 transition-all cursor-pointer relative"
-        >
-          <MessageSquare className="w-5 h-5" />
-          <span className="absolute -top-1 -right-1 bg-green-500 w-3 h-3 rounded-full border-2 border-white"></span>
-        </button>
-      </div>
+      {/* Floating Cart Trigger Bar */}
+      {cart.length > 0 && !isCartBottomSheetOpen && (
+        <div className="fixed bottom-24 left-1/2 translate-x-[-50%] w-full max-w-md px-6 z-40">
+          <button 
+            onClick={() => setIsCartBottomSheetOpen(true)}
+            className="w-full bg-[#1c1b1b] text-white py-3.5 px-5 rounded-2xl flex items-center justify-between shadow-xl cursor-pointer hover:bg-slate-900 active:scale-95 transition-all border border-primary-500/20"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-primary-500/20 flex items-center justify-center border border-primary-500/30">
+                <ShoppingBag className="w-5 h-5 text-primary-500 animate-pulse" />
+              </div>
+              <div className="text-left">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{cart.reduce((s, c) => s + c.quantity, 0)} Items</p>
+                <p className="text-xs font-black text-white">{settings.currencySymbol}{cartGrandTotal.toFixed(2)}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 text-primary-500 font-bold text-xs uppercase tracking-wider">
+              <span>View Order</span>
+              <ChevronRight className="w-4 h-4 animate-bounce-x" />
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* Bottom Navigation Bar */}
       <nav className="fixed bottom-0 left-0 w-full z-50 max-w-md mx-auto translate-x-[-50%] left-1/2">
@@ -1394,36 +1304,19 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
             }`}
           >
             <Utensils className="w-4.5 h-4.5" />
-            <span className="text-[9px] mt-1 font-bold tracking-wider">{t.menu}</span>
+            <span className="text-[9px] mt-1 font-bold tracking-wider">{lang === 'gu' ? 'મેનૂ' : 'Menu'}</span>
           </button>
           
           <button 
-            onClick={() => setActiveTab('scan')}
+            onClick={() => setActiveTab('chef')}
             className={`flex flex-col items-center justify-center py-1.5 px-4 rounded-xl transition-all duration-305 active:scale-95 cursor-pointer ${
-              activeTab === 'scan' 
+              activeTab === 'chef' 
                 ? 'text-primary-500 font-bold bg-primary-50/50 shadow-sm' 
                 : 'text-slate-400 hover:text-slate-600'
             }`}
           >
-            <QrCode className="w-4.5 h-4.5" />
-            <span className="text-[9px] mt-1 font-bold tracking-wider">{t.scan}</span>
-          </button>
-  
-          <button 
-            onClick={() => setActiveTab('cart')}
-            className={`flex flex-col items-center justify-center py-1.5 px-4 rounded-xl relative transition-all duration-305 active:scale-95 cursor-pointer ${
-              activeTab === 'cart' 
-                ? 'text-primary-500 font-bold bg-primary-50/50 shadow-sm' 
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <ShoppingBag className="w-4.5 h-4.5" />
-            <span className="text-[9px] mt-1 font-bold tracking-wider">{t.cart}</span>
-            {cart.length > 0 && (
-              <span className="absolute top-0.5 right-2 bg-primary-500 text-white font-bold text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                {cart.reduce((s, c) => s + c.quantity, 0)}
-              </span>
-            )}
+            <Sparkles className="w-4.5 h-4.5" />
+            <span className="text-[9px] mt-1 font-bold tracking-wider">{lang === 'gu' ? 'AI શેફ' : 'AI Chef'}</span>
           </button>
   
           <button 
@@ -1435,7 +1328,19 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
             }`}
           >
             <Compass className="w-4.5 h-4.5" />
-            <span className="text-[9px] mt-1 font-bold tracking-wider">{t.status}</span>
+            <span className="text-[9px] mt-1 font-bold tracking-wider">{lang === 'gu' ? 'ઓર્ડર્સ' : 'Orders'}</span>
+          </button>
+  
+          <button 
+            onClick={() => setActiveTab('profile')}
+            className={`flex flex-col items-center justify-center py-1.5 px-4 rounded-xl transition-all duration-305 active:scale-95 cursor-pointer ${
+              activeTab === 'profile' 
+                ? 'text-primary-500 font-bold bg-primary-50/50 shadow-sm' 
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <User className="w-4.5 h-4.5" />
+            <span className="text-[9px] mt-1 font-bold tracking-wider">{lang === 'gu' ? 'પ્રોફાઇલ' : 'Profile'}</span>
           </button>
         </div>
       </nav>
@@ -1538,6 +1443,233 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                   <span>Add to Order</span>
                   <span className="font-extrabold">{settings.currencySymbol}{(selectedItem.price * itemQuantity).toFixed(2)}</span>
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* CART BOTTOM SHEET */}
+      <AnimatePresence>
+        {isCartBottomSheetOpen && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0">
+            <motion.div 
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25 }}
+              className="bg-white w-full max-w-md rounded-t-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[85vh] relative"
+            >
+              {/* Header */}
+              <div className="p-5 border-b border-black/5 flex items-center justify-between bg-slate-50">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center shadow-inner">
+                    <ShoppingBag className="w-4 h-4 text-primary-500" />
+                  </div>
+                  <div>
+                    <h2 className="font-display font-bold text-sm text-slate-800">{lang === 'gu' ? 'તમારું કાર્ટ' : 'Your Basket'}</h2>
+                    <p className="text-[9px] text-slate-500 font-medium">Table {activeTable ? activeTable.name : 'Not Set'}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsCartBottomSheetOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Scrollable details */}
+              <div className="grow overflow-y-auto p-5 flex flex-col gap-5">
+                
+                {/* Rewards Loyalty club status */}
+                {!activeCustomer ? (
+                  <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-amber-100/50 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex gap-2.5">
+                      <div className="p-2 bg-amber-100 rounded-xl flex items-center justify-center shrink-0"><Sparkles className="w-4 h-4 text-amber-600" /></div>
+                      <div>
+                        <h3 className="text-xs font-bold text-slate-800">Rewards Club</h3>
+                        <p className="text-[10px] text-[#546067]">10% points on verify.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <input 
+                        type="tel"
+                        maxLength={10}
+                        placeholder="Phone"
+                        value={phoneLookup}
+                        onChange={e => setPhoneLookup(e.target.value.replace(/\D/g, ''))}
+                        className="w-24 px-2 py-1.5 rounded-xl border border-gray-200 text-[10px] focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+                      />
+                      <button 
+                        onClick={handleLoyaltyLookup}
+                        disabled={phoneLookup.length < 10}
+                        className="bg-primary-500 disabled:bg-gray-300 text-white text-[10px] px-2.5 py-1.5 rounded-xl font-bold hover:bg-primary-600 cursor-pointer"
+                      >
+                        Join
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center font-bold text-green-700">
+                        <User className="w-4 h-4 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-bold text-gray-800">{activeCustomer.name}</p>
+                        <p className="text-[10px] text-green-700 font-semibold">{activeCustomer.points} Points Available</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => { setActiveCustomer(null); setRedeemPoints(false); }}
+                      className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Dining Mode selector */}
+                <section className="space-y-2">
+                  <h2 className="text-[10px] font-bold text-[#546067] uppercase tracking-widest">{lang === 'gu' ? 'ઓર્ડર પ્રકાર' : 'Dining Mode'}</h2>
+                  <div className="glass-card p-1 rounded-2xl flex border border-black/5">
+                    <button 
+                      onClick={() => setDiningMode('Dine In')}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        diningMode === 'Dine In' 
+                          ? 'bg-primary-500 text-white shadow-md' 
+                          : 'text-[#546067] hover:bg-slate-100/50'
+                      }`}
+                    >
+                      {lang === 'gu' ? 'અહીં આરોગો' : 'Dine In'}
+                    </button>
+                    <button 
+                      onClick={() => setDiningMode('Take Away')}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        diningMode === 'Take Away' 
+                          ? 'bg-primary-500 text-white shadow-md' 
+                          : 'text-[#546067] hover:bg-slate-100/50'
+                      }`}
+                    >
+                      {lang === 'gu' ? 'પાર્સલ' : 'Take Away'}
+                    </button>
+                  </div>
+                </section>
+
+                {/* Cart list items details */}
+                <section className="space-y-3">
+                  <h2 className="text-[10px] font-bold text-[#546067] uppercase tracking-widest">{lang === 'gu' ? 'વાનગીઓની વિગત' : 'Order Details'}</h2>
+                  
+                  {cart.map((item, index) => (
+                    <div 
+                      key={index}
+                      className="glass-card p-4 rounded-3xl flex gap-3 border border-black/5 shadow-sm"
+                    >
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-primary-500/10 bg-slate-50">
+                        <img src={item.menuItem.image} alt={translateItemName(item.menuItem, lang)} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex flex-col justify-between grow">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-bold text-xs text-slate-800">{translateItemName(item.menuItem, lang)}</h3>
+                            {item.selectedCustomizations.length > 0 && (
+                              <p className="text-[9px] text-[#546067] font-medium mt-0.5">{item.selectedCustomizations.join(', ')}</p>
+                            )}
+                            {item.notes && (
+                              <p className="text-[9px] text-gray-400 italic mt-0.5">"${item.notes}"</p>
+                            )}
+                          </div>
+                          <span className="font-extrabold text-xs text-primary-500 text-glow-gold">
+                            {settings.currencySymbol}{item.menuItem.price * item.quantity}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mt-2">
+                          <button 
+                            onClick={() => updateCartQty(index, -1)}
+                            className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-primary-500 cursor-pointer"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="w-5 text-center text-xs font-bold text-slate-800">{item.quantity}</span>
+                          <button 
+                            onClick={() => updateCartQty(index, 1)}
+                            className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-primary-500 cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </section>
+
+                {/* Promo Code rewards bar */}
+                <section className="space-y-1.5">
+                  <h2 className="text-[10px] font-bold text-[#546067] uppercase tracking-widest">{lang === 'gu' ? 'ઇનામો' : 'Rewards'}</h2>
+                  <div className="glass-card p-4 rounded-3xl flex items-center justify-between border border-black/5 shadow-sm">
+                    <div className="flex items-center gap-2.5">
+                      <Sparkles className="w-4 h-4 text-primary-500" />
+                      <span className="font-bold text-xs text-slate-800">LUMIERE_WELCOME</span>
+                    </div>
+                    <button 
+                      onClick={() => setApplyPromoCode(!applyPromoCode)}
+                      className="text-primary-500 font-bold text-xs cursor-pointer hover:underline"
+                    >
+                      {applyPromoCode ? (lang === 'gu' ? 'લાગુ થયું' : 'Applied') : (lang === 'gu' ? 'લાગુ કરો' : 'Apply')}
+                    </button>
+                  </div>
+                </section>
+
+                {/* Bill calculations block */}
+                <section className="glass-card rounded-[32px] p-5 border border-black/5 shadow-sm">
+                  <div className="space-y-2 mb-4 border-b border-gray-100 pb-4">
+                    <div className="flex justify-between items-center text-xs text-[#546067]">
+                      <span>{lang === 'gu' ? 'પેટા સરવાળો' : 'Subtotal'}</span>
+                      <span className="font-bold text-slate-800">{settings.currencySymbol}{cartSubtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-[#546067]">
+                      <span>{lang === 'gu' ? 'સેવા શુલ્ક (૧૦%)' : 'Service Fee (10%)'}</span>
+                      <span className="font-bold text-slate-800">{settings.currencySymbol}{serviceFee.toFixed(2)}</span>
+                    </div>
+                    
+                    {promoDiscount > 0 && (
+                      <div className="flex justify-between items-center text-xs text-green-600">
+                        <span>Promo Discount (10%)</span>
+                        <span className="font-bold">-{settings.currencySymbol}{promoDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {activeCustomer && activeCustomer.points > 0 && (
+                      <div className="flex justify-between items-center text-xs pt-1.5 border-t border-dashed border-gray-200">
+                        <label className="flex items-center gap-1.5 font-bold text-green-700 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={redeemPoints}
+                            onChange={e => setRedeemPoints(e.target.checked)}
+                            className="accent-green-600"
+                          />
+                          Redeem {maxRedeemablePoints} Points
+                        </label>
+                        <span className="font-extrabold text-green-700">-{settings.currencySymbol}{loyaltyPointsDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center pt-2.5 border-t border-gray-100 text-sm font-extrabold text-slate-900">
+                      <span>{lang === 'gu' ? 'કુલ ચૂકવવાપાત્ર' : 'Total'}</span>
+                      <span className="text-primary-500 font-black">{settings.currencySymbol}{cartGrandTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={placeOrder}
+                    className="w-full bg-primary-500 hover:bg-primary-600 text-white h-12 rounded-2xl font-bold text-xs uppercase tracking-wider shadow-md shadow-primary-500/20 flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-[0.98]"
+                  >
+                    {lang === 'gu' ? 'ઓર્ડર મોકલો' : 'Place Order'}
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </section>
+
               </div>
             </motion.div>
           </div>
