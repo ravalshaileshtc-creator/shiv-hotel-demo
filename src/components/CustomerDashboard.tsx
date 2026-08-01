@@ -545,7 +545,16 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   };
 
   const placeOrder = async () => {
-    if (cart.length === 0 || !scannedTableId) return;
+    if (cart.length === 0) return;
+
+    if (!scannedTableId) {
+      alert(lang === 'gu' 
+        ? "કૃપા કરીને ઓર્ડર આપવા માટે પ્રોફાઇલ પેજમાં ટેબલ નંબર દાખલ કરો!" 
+        : "Please enter your table number in the Profile settings to place the order!");
+      setIsCartBottomSheetOpen(false);
+      setActiveTab('profile');
+      return;
+    }
 
     try {
       const newOrder: Order = {
