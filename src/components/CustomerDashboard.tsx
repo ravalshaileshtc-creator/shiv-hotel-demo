@@ -264,6 +264,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   const [tenantStatus, setTenantStatus] = useState<'ACTIVE' | 'PENDING' | 'SUSPENDED' | null>(null);
   const [tenantName, setTenantName] = useState<string>('Zamvo');
   const [isLoading, setIsLoading] = useState(true);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   useEffect(() => {
     const loadTenant = async () => {
@@ -546,6 +547,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
 
   const placeOrder = async () => {
     if (cart.length === 0) return;
+    if (isPlacingOrder) return;
 
     if (!scannedTableId) {
       alert(lang === 'gu' 
@@ -556,9 +558,23 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
       return;
     }
 
+    // Check for existing pending duplicate order in the last 20 seconds
+    const existingDuplicate = orders.find(o => 
+      o.tableId === scannedTableId && 
+      (o.status === 'PLACED' || o.status === 'ACCEPTED_BY_KITCHEN' || o.status === 'PREPARING') &&
+      Math.abs(o.timestamp - Date.now()) < 20000
+    );
+    if (existingDuplicate) {
+      alert(lang === 'gu' 
+        ? "તમારો ઓર્ડર પહેલેથી જ મોકલેલ છે, કૃપા કરીને થોડી રાહ જુઓ!" 
+        : "Your order has already been placed. Please wait for the kitchen to accept it!");
+      return;
+    }
+
+    setIsPlacingOrder(true);
     try {
       const newOrder: Order = {
-        id: `ord-${Date.now()}`,
+        id: `ord-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
         restaurantId,
         tableId: scannedTableId,
         items: cart.map(c => ({
@@ -617,6 +633,8 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
     } catch (e: any) {
       console.error(e);
       alert(`Firebase Sync Error: ${e.message || 'Permission denied or connection issue'}.\n\nPlease check if your Firestore Database is in "Test Mode" and allows reads/writes. Go to Firebase Console > Firestore > Rules and set: "allow read, write: if true;"`);
+    } finally {
+      setIsPlacingOrder(false);
     }
   };
 
@@ -943,6 +961,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                         src={featuredItem.image} 
                         alt={featuredItem.name} 
                         className="w-full h-full object-cover"
+                        loading="lazy"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
                         }}
@@ -982,6 +1001,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                         src={item.image} 
                         alt={translateItemName(item, lang)} 
                         className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                        loading="lazy"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500';
                         }}
@@ -1813,10 +1833,15 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
 
                   <button 
                     onClick={placeOrder}
-                    className="w-full bg-primary-500 hover:bg-primary-600 text-white h-12 rounded-2xl font-bold text-xs uppercase tracking-wider shadow-md shadow-primary-500/20 flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-[0.98]"
+                    disabled={isPlacingOrder}
+                    className={`w-full bg-primary-500 hover:bg-primary-600 text-white h-12 rounded-2xl font-bold text-xs uppercase tracking-wider shadow-md shadow-primary-500/20 flex items-center justify-center gap-2 transition-transform active:scale-[0.98] ${
+                      isPlacingOrder ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    }`}
                   >
-                    {lang === 'gu' ? 'ઓર્ડર મોકલો' : 'Place Order'}
-                    <ChevronRight className="w-4 h-4" />
+                    {isPlacingOrder 
+                      ? (lang === 'gu' ? 'મોકલી રહ્યું છે...' : 'Placing Order...') 
+                      : (lang === 'gu' ? 'ઓર્ડર મોકલો' : 'Place Order')}
+                    {!isPlacingOrder && <ChevronRight className="w-4 h-4" />}
                   </button>
                 </section>
 

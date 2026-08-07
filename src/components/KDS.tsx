@@ -29,6 +29,7 @@ export default function KDS() {
   const [tenants, setTenants] = useState<any[]>([]);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const seenOrdersRef = useRef<Set<string>>(new Set());
+  const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
 
   // Subscribe to DB state
   useEffect(() => {
@@ -165,28 +166,36 @@ export default function KDS() {
 
   // Update order status
   const transitionOrderStatus = async (orderId: string, nextStatus: Order['status']) => {
-    const updatedOrders = orders.map(o => {
-      if (o.id === orderId) {
-        return { ...o, status: nextStatus } as Order;
-      }
-      return o;
-    });
+    if (processingOrderId) return;
+    setProcessingOrderId(orderId);
+    try {
+      const updatedOrders = orders.map(o => {
+        if (o.id === orderId) {
+          return { ...o, status: nextStatus } as Order;
+        }
+        return o;
+      });
 
-    // Update active table details if status is READY
-    let updatedTables = tables;
-    if (nextStatus === 'READY') {
-      const targetOrder = orders.find(o => o.id === orderId);
-      if (targetOrder) {
-        updatedTables = tables.map(t => {
-          if (t.id === targetOrder.tableId) {
-            return { ...t, status: 'occupied' } as Table;
-          }
-          return t;
-        });
+      // Update active table details if status is READY
+      let updatedTables = tables;
+      if (nextStatus === 'READY') {
+        const targetOrder = orders.find(o => o.id === orderId);
+        if (targetOrder) {
+          updatedTables = tables.map(t => {
+            if (t.id === targetOrder.tableId) {
+              return { ...t, status: 'occupied' } as Table;
+            }
+            return t;
+          });
+        }
       }
+
+      await updateState({ orders: updatedOrders, tables: updatedTables });
+    } catch (e) {
+      console.error('Failed to transition order status:', e);
+    } finally {
+      setProcessingOrderId(null);
     }
-
-    await updateState({ orders: updatedOrders, tables: updatedTables });
   };
 
   // Helper to format minutes elapsed
@@ -266,11 +275,11 @@ export default function KDS() {
       </header>
 
       {/* Workspace Area */}
-      <div className="grow flex overflow-hidden p-6 gap-6">
+      <div className="grow flex flex-col md:flex-row overflow-hidden p-4 md:p-6 gap-4 md:gap-6 min-h-0">
         
         {/* Left Side: Prep Queue Summary */}
-        <div className="w-80 bg-slate-800 rounded-2xl border border-slate-700 p-5 flex flex-col justify-between shrink-0 shadow-lg">
-          <div className="flex flex-col gap-4 overflow-y-auto max-h-[70vh]">
+        <div className="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 p-4 md:p-5 flex flex-col md:justify-between shrink-0 shadow-lg max-h-48 md:max-h-[75vh]">
+          <div className="flex flex-col gap-4 overflow-y-auto max-h-[60vh] md:max-h-[70vh]">
             <div className="flex items-center gap-2 border-b border-slate-700 pb-3">
               <UtensilsCrossed className="w-5 h-5 text-primary-500" />
               <h2 className="text-sm font-bold text-white uppercase tracking-wider">Preparation List</h2>
@@ -302,7 +311,7 @@ export default function KDS() {
         </div>
 
         {/* Right Side: Active Order Cards Grid */}
-        <div className="grow overflow-x-auto flex gap-4 pb-2 items-start h-full">
+        <div className="grow overflow-x-auto flex gap-4 pb-2 items-start h-full min-h-0 w-full">
           {activeKdsOrders.map(order => {
             const table = tables.find(t => t.id === order.tableId);
             const minutes = getMinutesElapsed(order.timestamp);
@@ -369,15 +378,21 @@ export default function KDS() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => transitionOrderStatus(order.id, 'REJECTED')}
-                        className="flex-1 bg-red-600/20 border border-red-500/30 hover:bg-red-600/35 text-red-400 font-bold py-2 py-2.5 rounded-xl text-xs cursor-pointer transition-colors"
+                        disabled={!!processingOrderId}
+                        className={`flex-1 bg-red-600/20 border border-red-500/30 hover:bg-red-600/35 text-red-400 font-bold py-2.5 rounded-xl text-xs cursor-pointer transition-colors ${
+                          processingOrderId ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                       >
-                        Reject
+                        {processingOrderId === order.id ? 'Loading...' : 'Reject'}
                       </button>
                       <button
                         onClick={() => transitionOrderStatus(order.id, 'ACCEPTED_BY_KITCHEN')}
-                        className="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer shadow-md shadow-primary-500/10 transition-colors animate-pulse"
+                        disabled={!!processingOrderId}
+                        className={`flex-1 bg-primary-500 hover:bg-primary-600 text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer shadow-md shadow-primary-500/10 transition-colors ${
+                          processingOrderId ? 'opacity-50 cursor-not-allowed' : 'animate-pulse'
+                        }`}
                       >
-                        Accept
+                        {processingOrderId === order.id ? 'Loading...' : 'Accept'}
                       </button>
                     </div>
                   )}
@@ -385,10 +400,13 @@ export default function KDS() {
                   {order.status === 'ACCEPTED_BY_KITCHEN' && (
                     <button
                       onClick={() => transitionOrderStatus(order.id, 'PREPARING')}
-                      className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-amber-500/10 transition-colors"
+                      disabled={!!processingOrderId}
+                      className={`w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-amber-500/10 transition-colors ${
+                        processingOrderId ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                     >
                       <Flame className="w-4 h-4" />
-                      Start Preparing
+                      {processingOrderId === order.id ? 'Loading...' : 'Start Preparing'}
                     </button>
                   )}
 
@@ -396,16 +414,22 @@ export default function KDS() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => transitionOrderStatus(order.id, 'PLACED')}
-                        className="p-2.5 rounded-xl border border-slate-700 text-slate-400 hover:text-slate-300 hover:bg-slate-800 flex items-center justify-center cursor-pointer shrink-0"
+                        disabled={!!processingOrderId}
+                        className={`p-2.5 rounded-xl border border-slate-700 text-slate-400 hover:text-slate-300 hover:bg-slate-800 flex items-center justify-center cursor-pointer shrink-0 ${
+                          processingOrderId ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                       >
                         <RotateCcw className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => transitionOrderStatus(order.id, 'READY')}
-                        className="grow bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-green-600/10 transition-colors"
+                        disabled={!!processingOrderId}
+                        className={`grow bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-green-600/10 transition-colors ${
+                          processingOrderId ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                       >
                         <Check className="w-4 h-4" />
-                        Mark Ready
+                        {processingOrderId === order.id ? 'Loading...' : 'Mark Ready'}
                       </button>
                     </div>
                   )}
