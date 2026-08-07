@@ -4,6 +4,7 @@ import CustomerDashboard from './components/CustomerDashboard';
 import KDS from './components/KDS';
 import CashierTerminal from './components/CashierTerminal';
 import AdminDashboard from './components/AdminDashboard';
+import Splash from './components/Splash';
 import QRCode from 'qrcode';
 import { 
   Utensils, 
@@ -24,6 +25,8 @@ export default function App() {
     restaurantId: null,
     tableId: null
   });
+
+  const [showSplash, setShowSplash] = useState(true);
 
   // User Session Interface
   interface UserSession {
@@ -296,6 +299,9 @@ export default function App() {
 
   // 1. Customer view routing: query parameters present (Bypasses Login!)
   if (route.restaurantId && route.tableId) {
+    if (showSplash) {
+      return <Splash onComplete={() => setShowSplash(false)} />;
+    }
     return <CustomerDashboard restaurantId={route.restaurantId} tableId={route.tableId} />;
   }
 
