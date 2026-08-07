@@ -120,11 +120,19 @@ export default function KDS() {
       return;
     }
 
-    if (playSound && audioEnabled) {
+    if (playSound) {
       playNewOrderChime();
       if (speakTable) {
         announceOrderSpeech(speakTable, dishCount);
       }
+      
+      // Vibrate
+      if (navigator.vibrate) {
+        navigator.vibrate([150, 50, 150, 50, 200]);
+      }
+
+      // Alert Popup - Chef cannot miss it!
+      alert(`🔔 New Order Received!\n\nTable: ${speakTable}\nItems: ${dishCount}`);
     }
   }, [orders, tables, audioEnabled]);
 

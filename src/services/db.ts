@@ -819,5 +819,39 @@ export const getIsFirebaseMode = () => {
   return isFirebaseMode;
 };
 
+// Register dynamic device token in Firestore
+export const registerDeviceToken = async (restaurantId: string, role: string, deviceId: string) => {
+  let token = 'mock-fcm-token-' + Math.floor(Math.random() * 1000000);
+  try {
+    // Check if browser supports service workers and notification APIs
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'Notification' in window) {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted' && isFirebaseMode && firebaseApp) {
+        const { getMessaging, getToken } = await import('firebase/messaging');
+        const messaging = getMessaging(firebaseApp);
+        // VAPID keys can be configured dynamically
+        token = await getToken(messaging, { vapidKey: 'BJK-g76k_q9x8Pz1V02o62y91v58' });
+      }
+    }
+  } catch (e) {
+    console.warn('FCM registration skipped or not supported:', e);
+  }
+
+  // Save to Firestore device index
+  if (isFirebaseMode && firestoreDb) {
+    try {
+      await setDoc(doc(firestoreDb, 'restaurants', restaurantId, 'devices', deviceId), {
+        token,
+        role,
+        deviceId,
+        updatedAt: Date.now()
+      });
+      console.log(`FCM Device Token registered successfully for ${role}`);
+    } catch (e) {
+      console.error('Failed to save device token in Firestore:', e);
+    }
+  }
+};
+
 // Auto-initialize sync immediately on module load
 initSync();

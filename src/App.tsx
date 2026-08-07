@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { initSync, updateRestaurantTenant, type RestaurantTenant, getUserDocument, saveUserDocument, subscribeToState, safeLocalStorage, getRestaurantTenant, getSaasSettings } from './services/db';
+import { initSync, updateRestaurantTenant, type RestaurantTenant, getUserDocument, saveUserDocument, subscribeToState, safeLocalStorage, getRestaurantTenant, getSaasSettings, registerDeviceToken } from './services/db';
 import CustomerDashboard from './components/CustomerDashboard';
 import KDS from './components/KDS';
 import CashierTerminal from './components/CashierTerminal';
@@ -55,6 +55,16 @@ export default function App() {
       const unsubscribe = subscribeToState((state) => {
         setSettings(state.settings);
       });
+
+      // Register device FCM token dynamically
+      const deviceId = safeLocalStorage.getItem('device_id') || 'dev-' + Math.floor(Math.random() * 1000000);
+      safeLocalStorage.setItem('device_id', deviceId);
+      if (userSession.restaurantId) {
+        registerDeviceToken(userSession.restaurantId, userSession.role, deviceId);
+      } else {
+        registerDeviceToken('platform', userSession.role, deviceId);
+      }
+      
       return unsubscribe;
     }
   }, [userSession]);

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type MenuItem, type Table, type Order, type Settings, type Customer, subscribeToState, updateState, getRestaurantTenant, safeLocalStorage } from '../services/db';
+import { type MenuItem, type Table, type Order, type Settings, type Customer, subscribeToState, updateState, getRestaurantTenant, safeLocalStorage, registerDeviceToken } from '../services/db';
 import { 
   Search, 
   ShoppingBag, 
@@ -404,8 +404,14 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
       setCustomers(state.customers);
       setIsLoading(false);
     });
+
+    // Register Customer Device FCM token
+    const deviceId = safeLocalStorage.getItem('device_id') || 'dev-' + Math.floor(Math.random() * 1000000);
+    safeLocalStorage.setItem('device_id', deviceId);
+    registerDeviceToken(restaurantId, 'customer', deviceId);
+
     return unsubscribe;
-  }, []);
+  }, [restaurantId]);
 
   // Update browser tab title dynamically
   useEffect(() => {
@@ -432,6 +438,62 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
       setActiveTab('profile');
     }
   }, [scannedTableId]);
+
+  // Order status real-time notification alerts
+  const prevOrderStatusRef = useRef<Order['status'] | null>(null);
+  useEffect(() => {
+    const liveOrder = orders.find(o => 
+      o.tableId === scannedTableId && 
+      o.status !== 'COMPLETED' && 
+      o.status !== 'REJECTED'
+    );
+    
+    if (liveOrder) {
+      const currentStatus = liveOrder.status;
+      const prevStatus = prevOrderStatusRef.current;
+      
+      if (prevStatus && prevStatus !== currentStatus) {
+        let title = "🔔 Order Update";
+        let body = "";
+        
+        if (currentStatus === 'ACCEPTED_BY_KITCHEN') {
+          body = lang === 'gu' ? "🍽️ તમારો ઓર્ડર સ્વીકારવામાં આવ્યો છે." : "🍽️ Your order has been accepted.";
+        } else if (currentStatus === 'PREPARING') {
+          body = lang === 'gu' ? "👨‍🍳 તમારી રસોઈ બની રહી છે." : "👨‍🍳 Your food is being prepared.";
+        } else if (currentStatus === 'READY') {
+          body = lang === 'gu' ? "✅ તમારો ઓર્ડર તૈયાર છે." : "✅ Your order is ready.";
+        }
+
+        if (body) {
+          // Play sound
+          try {
+            const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.6);
+          } catch (e) {
+            console.error(e);
+          }
+
+          // Vibrate
+          if (navigator.vibrate) {
+            navigator.vibrate([100, 50, 100]);
+          }
+
+          alert(`${title}\n\n${body}`);
+        }
+      }
+      prevOrderStatusRef.current = currentStatus;
+    } else {
+      prevOrderStatusRef.current = null;
+    }
+  }, [orders, scannedTableId, lang]);
 
   const activeTable = tables.find(t => t.id === scannedTableId);
   const activeOrder = orders.find(o => o.tableId === scannedTableId && o.status !== 'COMPLETED' && o.status !== 'REJECTED');
