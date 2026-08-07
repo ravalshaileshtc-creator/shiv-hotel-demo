@@ -708,6 +708,11 @@ export const updateState = async (partialState: Partial<DBState>) => {
       }
       
       if (partialState.menu) {
+        for (const prev of previousState.menu) {
+          if (!partialState.menu.find(m => m.id === prev.id)) {
+            await deleteDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'menu', prev.id));
+          }
+        }
         for (const item of partialState.menu) {
           const prev = previousState.menu.find(m => m.id === item.id);
           if (!prev || JSON.stringify(prev) !== JSON.stringify(item)) {
@@ -717,6 +722,11 @@ export const updateState = async (partialState: Partial<DBState>) => {
       }
       
       if (partialState.tables) {
+        for (const prev of previousState.tables) {
+          if (!partialState.tables.find(t => t.id === prev.id)) {
+            await deleteDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'tables', prev.id));
+          }
+        }
         for (const item of partialState.tables) {
           const prev = previousState.tables.find(t => t.id === item.id);
           if (!prev || JSON.stringify(prev) !== JSON.stringify(item)) {
@@ -726,6 +736,11 @@ export const updateState = async (partialState: Partial<DBState>) => {
       }
       
       if (partialState.orders) {
+        for (const prev of previousState.orders) {
+          if (!partialState.orders.find(o => o.id === prev.id)) {
+            await deleteDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'orders', prev.id));
+          }
+        }
         for (const item of partialState.orders) {
           const prev = previousState.orders.find(o => o.id === item.id);
           if (!prev || JSON.stringify(prev) !== JSON.stringify(item)) {
@@ -735,6 +750,11 @@ export const updateState = async (partialState: Partial<DBState>) => {
       }
       
       if (partialState.customers) {
+        for (const prev of previousState.customers) {
+          if (!partialState.customers.find(c => c.phone === prev.phone)) {
+            await deleteDoc(doc(firestoreDb, 'restaurants', activeRestaurantId, 'customers', prev.phone));
+          }
+        }
         for (const item of partialState.customers) {
           const prev = previousState.customers.find(c => c.phone === item.phone);
           if (!prev || JSON.stringify(prev) !== JSON.stringify(item)) {
