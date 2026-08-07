@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { initSync, updateRestaurantTenant, type RestaurantTenant, getUserDocument, saveUserDocument, subscribeToState, safeLocalStorage } from './services/db';
+import { initSync, updateRestaurantTenant, type RestaurantTenant, getUserDocument, saveUserDocument, subscribeToState, safeLocalStorage, getRestaurantTenant, getSaasSettings } from './services/db';
 import CustomerDashboard from './components/CustomerDashboard';
 import KDS from './components/KDS';
 import CashierTerminal from './components/CashierTerminal';
@@ -80,6 +80,18 @@ export default function App() {
   const [generatedTenantId, setGeneratedTenantId] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const paymentCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [saasSettings, setSaasSettings] = useState<any>({
+    upiId: 'lumiere@upi',
+    upiName: 'Lumiere Platform',
+    monthlyPrice: 499,
+    qrUrl: ''
+  });
+
+  useEffect(() => {
+    if (isRegisterOpen) {
+      getSaasSettings().then(setSaasSettings).catch(console.error);
+    }
+  }, [isRegisterOpen]);
 
   const handleNextToPayment = () => {
     if (!regName.trim() || !regPhone.trim()) {
@@ -94,20 +106,31 @@ export default function App() {
 
   useEffect(() => {
     if (isRegisterOpen && saasStep === 2 && paymentCanvasRef.current) {
-      // Payment amount ₹499 INR for monthly platform charge
-      const payString = `upi://pay?pa=lumiere@upi&pn=LumierePlatform&am=499.00&cu=INR&tn=SaaS_Registration_${generatedTenantId}`;
-      QRCode.toCanvas(paymentCanvasRef.current, payString, {
-        width: 180,
-        margin: 1.5,
-        color: {
-          dark: '#0f172a',
-          light: '#ffffff'
-        }
-      }, (err) => {
-        if (err) console.error('UPI QR Code generation error:', err);
-      });
+      if (saasSettings.qrUrl) {
+        const img = new Image();
+        img.src = saasSettings.qrUrl;
+        img.onload = () => {
+          const ctx = paymentCanvasRef.current?.getContext('2d');
+          if (ctx) {
+            ctx.clearRect(0, 0, 180, 180);
+            ctx.drawImage(img, 0, 0, 180, 180);
+          }
+        };
+      } else {
+        const payString = `upi://pay?pa=${saasSettings.upiId}&pn=${encodeURIComponent(saasSettings.upiName)}&am=${saasSettings.monthlyPrice}&cu=INR&tn=SaaS_Registration_${generatedTenantId}`;
+        QRCode.toCanvas(paymentCanvasRef.current, payString, {
+          width: 180,
+          margin: 1.5,
+          color: {
+            dark: '#0f172a',
+            light: '#ffffff'
+          }
+        }, (err) => {
+          if (err) console.error('UPI QR Code generation error:', err);
+        });
+      }
     }
-  }, [isRegisterOpen, saasStep, generatedTenantId]);
+  }, [isRegisterOpen, saasStep, generatedTenantId, saasSettings]);
 
   const handlePaymentComplete = async () => {
     setIsRegistering(true);
@@ -116,7 +139,7 @@ export default function App() {
         id: generatedTenantId,
         name: regName,
         ownerPhone: regPhone,
-        status: 'ACTIVE',
+        status: 'PENDING',
         subscriptionExpiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
         upiId: regUpi || 'saasowner@upi'
       };
@@ -150,7 +173,7 @@ export default function App() {
         restaurantId: generatedTenantId
       });
 
-      alert(`🎉 Congratulations! "${regName}" has been successfully registered.\n\nLogin Accounts Created:\n\n1. 👨‍💼 OWNER:\n- Mobile: ${regPhone}\n- Password: owner123\n\n2. 💵 CASHIER:\n- Mobile: ${regPhone}1\n- Password: cashier123\n\n3. 🍳 KITCHEN:\n- Mobile: ${regPhone}2\n- Password: kitchen123\n\nYou can now log in using these credentials!`);
+      alert(`🎉 Registration Submitted!\n\nYour restaurant "${regName}" has been registered. The account is currently PENDING approval from the Super Admin.\n\nOnce approved, you will be able to log in using the credentials:\n\n1. 👨‍💼 OWNER:\n- Mobile: ${regPhone}\n- Password: owner123\n\n2. 💵 CASHIER:\n- Mobile: ${regPhone}1\n- Password: cashier123\n\n3. 🍳 KITCHEN:\n- Mobile: ${regPhone}2\n- Password: kitchen123\n\nPlease contact Super Admin to activate your ID!`);
       
       // Reset
       setIsRegisterOpen(false);
@@ -176,6 +199,30 @@ export default function App() {
     try {
       const userDoc = await getUserDocument(loginPhone.trim());
       if (userDoc && userDoc.password === loginPassword.trim()) {
+        if (userDoc.role !== 'super_admin') {
+          const tenant = await getRestaurantTenant(userDoc.restaurantId);
+          if (!tenant) {
+            setLoginError('Restaurant profile not found.');
+            setIsLoggingIn(false);
+            return;
+          }
+          if (tenant.status === 'PENDING') {
+            setLoginError('Your restaurant registration is PENDING Super Admin approval. Please contact support.');
+            setIsLoggingIn(false);
+            return;
+          }
+          if (tenant.status === 'SUSPENDED') {
+            setLoginError('Your account has been SUSPENDED. Please contact Super Admin.');
+            setIsLoggingIn(false);
+            return;
+          }
+          if (tenant.subscriptionExpiresAt && tenant.subscriptionExpiresAt < Date.now()) {
+            setLoginError('Your 1-month subscription has EXPIRED. Please renew to continue.');
+            setIsLoggingIn(false);
+            return;
+          }
+        }
+
         const sessionData: UserSession = {
           name: userDoc.name,
           phone: userDoc.phone,

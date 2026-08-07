@@ -261,7 +261,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   const [customers, setCustomers] = useState<Customer[]>([]);
 
   // Tenant subscription checking states
-  const [tenantStatus, setTenantStatus] = useState<'ACTIVE' | 'PENDING_PAYMENT' | 'SUSPENDED' | null>(null);
+  const [tenantStatus, setTenantStatus] = useState<'ACTIVE' | 'PENDING' | 'SUSPENDED' | null>(null);
   const [tenantName, setTenantName] = useState<string>('Lumière Dining');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -753,7 +753,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
     );
   }
 
-  if (tenantStatus === 'PENDING_PAYMENT' || tenantStatus === 'SUSPENDED') {
+  if (tenantStatus === 'PENDING' || tenantStatus === 'SUSPENDED') {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
         {/* Glowing shapes */}

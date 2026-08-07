@@ -258,7 +258,7 @@ export interface RestaurantTenant {
   id: string;
   name: string;
   ownerPhone: string;
-  status: 'ACTIVE' | 'PENDING_PAYMENT' | 'SUSPENDED';
+  status: 'ACTIVE' | 'PENDING' | 'SUSPENDED';
   subscriptionExpiresAt: number;
   upiId: string;
   ownerPassword?: string;
@@ -299,6 +299,42 @@ export const getAllRestaurantTenants = async (): Promise<RestaurantTenant[]> => 
   }
   // Local mock list
   return [];
+};
+
+export interface SaasSettings {
+  upiId: string;
+  upiName: string;
+  monthlyPrice: number;
+  qrUrl?: string;
+}
+
+export const getSaasSettings = async (): Promise<SaasSettings> => {
+  if (isFirebaseMode && firestoreDb) {
+    try {
+      const settingsDoc = await getDoc(doc(firestoreDb, 'global', 'saas_settings'));
+      if (settingsDoc.exists()) {
+        return settingsDoc.data() as SaasSettings;
+      }
+    } catch (e) {
+      console.error('Failed to fetch global saas settings:', e);
+    }
+  }
+  return {
+    upiId: 'lumiere@upi',
+    upiName: 'Lumiere Platform',
+    monthlyPrice: 499
+  };
+};
+
+export const updateSaasSettings = async (settings: SaasSettings): Promise<void> => {
+  if (isFirebaseMode && firestoreDb) {
+    try {
+      await setDoc(doc(firestoreDb, 'global', 'saas_settings'), settings);
+    } catch (e) {
+      console.error('Failed to update global saas settings:', e);
+      throw e;
+    }
+  }
 };
 
 export const updateRestaurantTenant = async (tenant: RestaurantTenant) => {

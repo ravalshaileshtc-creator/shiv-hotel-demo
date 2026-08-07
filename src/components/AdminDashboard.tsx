@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, getIsFirebaseMode, getAllRestaurantTenants, updateRestaurantTenant, getActiveRestaurantId, type RestaurantTenant, saveUserDocument, deleteUserDocument, getRestaurantUsers, safeLocalStorage } from '../services/db';
+import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, getIsFirebaseMode, getAllRestaurantTenants, updateRestaurantTenant, getActiveRestaurantId, type RestaurantTenant, saveUserDocument, deleteUserDocument, getRestaurantUsers, safeLocalStorage, getSaasSettings, updateSaasSettings, type SaasSettings } from '../services/db';
 import { 
   TrendingUp, 
   ShoppingBag, 
@@ -81,6 +81,34 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
   const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'tables' | 'settings' | 'tenants' | 'staff'>('analytics');
   const [tenants, setTenants] = useState<RestaurantTenant[]>([]);
 
+  const [saasSettingsForm, setSaasSettingsForm] = useState<SaasSettings>({
+    upiId: 'lumiere@upi',
+    upiName: 'Lumiere Platform',
+    monthlyPrice: 499,
+    qrUrl: ''
+  });
+
+  const handleSaveSaasSettings = async () => {
+    try {
+      await updateSaasSettings(saasSettingsForm);
+      alert('SaaS Platform Settings saved successfully!');
+    } catch (err: any) {
+      console.error(err);
+      alert(`Failed to save SaaS settings: ${err.message || err}`);
+    }
+  };
+
+  const handleSaasQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const base64 = await compressImage(file, 512, 0.7);
+      setSaasSettingsForm(prev => ({ ...prev, qrUrl: base64 }));
+    } catch (err) {
+      console.error('Image compression failed:', err);
+    }
+  };
+
   // Staff Management States
   const [cashierUser, setCashierUser] = useState<any>({ name: 'Cashier', phone: '', password: 'cashier123' });
   const [originalCashierPhone, setOriginalCashierPhone] = useState('');
@@ -122,8 +150,17 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
         console.error('Failed to load tenants:', err);
       }
     };
+    const loadSaasSettings = async () => {
+      try {
+        const settings = await getSaasSettings();
+        setSaasSettingsForm(settings);
+      } catch (err: any) {
+        console.error('Failed to load saas settings:', err);
+      }
+    };
     if (role === 'super_admin') {
       loadTenants();
+      loadSaasSettings();
     }
   }, [role]);
 
@@ -137,6 +174,21 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
     } catch (err: any) {
       console.error(err);
       alert(`Action failed: ${err.message || err}`);
+    }
+  };
+
+  const handleRenewTenantSubscription = async (tenant: RestaurantTenant) => {
+    try {
+      const currentExpiry = tenant.subscriptionExpiresAt > Date.now() ? tenant.subscriptionExpiresAt : Date.now();
+      const newExpiry = currentExpiry + 30 * 24 * 60 * 60 * 1000;
+      const updated = { ...tenant, subscriptionExpiresAt: newExpiry, status: 'ACTIVE' as any };
+      await updateRestaurantTenant(updated);
+      alert(`Subscription renewed for "${tenant.name}" until ${new Date(newExpiry).toLocaleDateString()}`);
+      const tenantList = await getAllRestaurantTenants();
+      setTenants(tenantList);
+    } catch (err: any) {
+      console.error(err);
+      alert(`Failed to renew subscription: ${err.message || err}`);
     }
   };
 
@@ -999,6 +1051,78 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
           {/* SAAS TENANTS TAB */}
           {activeTab === 'tenants' && (
             <div className="flex flex-col gap-6">
+              {/* SaaS Platform Payment Settings Card */}
+              <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-gray-800 border-b border-gray-100 pb-3">SaaS Platform Payment Settings (Gateway QR)</h3>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Platform UPI ID</label>
+                    <input
+                      type="text"
+                      value={saasSettingsForm.upiId}
+                      onChange={e => setSaasSettingsForm({ ...saasSettingsForm, upiId: e.target.value })}
+                      placeholder="e.g. payment@upi"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Platform UPI Name</label>
+                    <input
+                      type="text"
+                      value={saasSettingsForm.upiName}
+                      onChange={e => setSaasSettingsForm({ ...saasSettingsForm, upiName: e.target.value })}
+                      placeholder="e.g. Shiv Hotel Platform"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Monthly Renewal Price (INR)</label>
+                    <input
+                      type="number"
+                      value={saasSettingsForm.monthlyPrice}
+                      onChange={e => setSaasSettingsForm({ ...saasSettingsForm, monthlyPrice: Number(e.target.value) })}
+                      placeholder="e.g. 499"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Custom QR Code Image</label>
+                    <label className="w-full bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold px-3 py-2 rounded-xl text-xs cursor-pointer flex items-center justify-center border border-dashed border-slate-300 transition-colors">
+                      Upload QR Image
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleSaasQrUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {saasSettingsForm.qrUrl && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <img src={saasSettingsForm.qrUrl} className="w-16 h-16 object-cover rounded-lg border border-gray-200" alt="QR Preview" />
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-500 italic font-semibold">Custom QR Code Preview</span>
+                      <button 
+                        onClick={() => setSaasSettingsForm({ ...saasSettingsForm, qrUrl: '' })}
+                        className="text-[9px] font-bold text-red-500 mt-1 hover:underline cursor-pointer text-left"
+                      >
+                        Remove custom QR
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleSaveSaasSettings}
+                  className="bg-primary-500 hover:bg-primary-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs cursor-pointer shadow-md shadow-primary-500/10 self-start"
+                >
+                  Save Platform Settings
+                </button>
+              </div>
+
               {/* Manual Onboarding Form */}
               <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
                 <h3 className="text-sm font-bold text-gray-800 border-b border-gray-100 pb-3">Onboard New Restaurant (Manual Setup)</h3>
@@ -1147,7 +1271,7 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
                           <td className="py-3.5 text-gray-600">{new Date(t.subscriptionExpiresAt).toLocaleDateString()}</td>
                           <td className="py-3.5">
                             <span className={`px-2 py-0.5 rounded-full font-bold text-[9px] ${
-                              t.status === 'ACTIVE' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                              t.status === 'ACTIVE' ? 'bg-green-50 text-green-600' : (t.status === 'PENDING' ? 'bg-yellow-50 text-yellow-600' : 'bg-red-50 text-red-600')
                             }`}>
                               {t.status}
                             </span>
@@ -1170,14 +1294,20 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
                               Owner Panel
                             </a>
                             <button
+                              onClick={() => handleRenewTenantSubscription(t)}
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-bold text-[10px] cursor-pointer"
+                            >
+                              Renew (+30 Days)
+                            </button>
+                            <button
                               onClick={() => handleToggleTenantStatus(t)}
                               className={`px-3 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-colors ${
                                 t.status === 'ACTIVE'
                                   ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                                  : 'bg-green-50 text-green-600 hover:bg-green-100'
+                                  : (t.status === 'PENDING' ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'bg-green-50 text-green-600 hover:bg-green-100')
                               }`}
                             >
-                              {t.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
+                              {t.status === 'ACTIVE' ? 'Suspend' : (t.status === 'PENDING' ? 'Approve' : 'Activate')}
                             </button>
                           </td>
                         </tr>
