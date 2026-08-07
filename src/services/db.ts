@@ -119,7 +119,7 @@ const MOCK_MENU: MenuItem[] = [
   },
   {
     id: 'm3',
-    name: 'Signature Lumière Burger',
+    name: 'Signature Zamvo Burger',
     description: 'Truffle-infused wagyu beef patty with aged gruyère and caramelized onions on a brioche bun.',
     price: 24.00,
     category: 'Mains',
@@ -279,11 +279,11 @@ export const getRestaurantTenant = async (restaurantId: string): Promise<Restaur
   // Local mock fallback for simulation
   return {
     id: restaurantId,
-    name: restaurantId === 'lumiere-dining' ? 'Lumière Dining' : 'Demo Restaurant',
+    name: restaurantId === 'lumiere-dining' ? 'Zamvo' : 'Demo Restaurant',
     ownerPhone: '9876543210',
     status: 'ACTIVE',
     subscriptionExpiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
-    upiId: 'lumiere@upi'
+    upiId: 'zamvo@upi'
   };
 };
 
@@ -320,8 +320,8 @@ export const getSaasSettings = async (): Promise<SaasSettings> => {
     }
   }
   return {
-    upiId: 'lumiere@upi',
-    upiName: 'Lumiere Platform',
+    upiId: 'zamvo@upi',
+    upiName: 'Zamvo Platform',
     monthlyPrice: 499
   };
 };
@@ -437,8 +437,8 @@ export const initSync = () => {
       tables: MOCK_TABLES,
       orders: [],
       settings: {
-        restaurantName: 'Lumière Dining',
-        upiId: 'lumiere@upi',
+        restaurantName: 'Zamvo',
+        upiId: 'zamvo@upi',
         address: '404 Luxury Avenue, Suite 10, Gourmet Heights, USA',
         logoUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=150',
         taxPercentage: 10,

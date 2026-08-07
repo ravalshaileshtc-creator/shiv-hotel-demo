@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Shiv Hotel</string>
-    <string name="title_activity_main">Shiv Hotel</string>
+    <string name="app_name">Zamvo</string>
+    <string name="title_activity_main">Zamvo</string>
     <string name="package_name">com.shivhotel.app</string>
     <string name="custom_url_scheme">com.shivhotel.app</string>
 </resources>

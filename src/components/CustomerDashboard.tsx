@@ -251,8 +251,8 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   const [tables, setTables] = useState<Table[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [settings, setSettings] = useState<Settings>({
-    restaurantName: 'Lumière Dining',
-    upiId: 'lumiere@upi',
+    restaurantName: 'Zamvo',
+    upiId: 'zamvo@upi',
     address: '',
     logoUrl: '',
     taxPercentage: 10,
@@ -262,7 +262,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
 
   // Tenant subscription checking states
   const [tenantStatus, setTenantStatus] = useState<'ACTIVE' | 'PENDING' | 'SUSPENDED' | null>(null);
-  const [tenantName, setTenantName] = useState<string>('Lumière Dining');
+  const [tenantName, setTenantName] = useState<string>('Zamvo');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -295,7 +295,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   // Cart State
   const [cart, setCart] = useState<CartItem[]>([]);
   const [diningMode, setDiningMode] = useState<'Dine In' | 'Take Away'>('Dine In');
-  const [applyPromoCode, setApplyPromoCode] = useState(true); // LUMIERE_WELCOME applied by default
+  const [applyPromoCode, setApplyPromoCode] = useState(true); // ZAMVO_WELCOME applied by default
 
   // Table Scan State (if no tableId is set originally in route)
   const [scannedTableId, setScannedTableId] = useState<string>(tableId || '');
@@ -1761,7 +1761,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
                   <div className="glass-card p-4 rounded-3xl flex items-center justify-between border border-black/5 shadow-sm">
                     <div className="flex items-center gap-2.5">
                       <Sparkles className="w-4 h-4 text-primary-500" />
-                      <span className="font-bold text-xs text-slate-800">LUMIERE_WELCOME</span>
+                      <span className="font-bold text-xs text-slate-800">ZAMVO_WELCOME</span>
                     </div>
                     <button 
                       onClick={() => setApplyPromoCode(!applyPromoCode)}

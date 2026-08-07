@@ -81,8 +81,8 @@ export default function App() {
   const [isRegistering, setIsRegistering] = useState(false);
   const paymentCanvasRef = useRef<HTMLCanvasElement>(null);
   const [saasSettings, setSaasSettings] = useState<any>({
-    upiId: 'lumiere@upi',
-    upiName: 'Lumiere Platform',
+    upiId: 'zamvo@upi',
+    upiName: 'Zamvo Platform',
     monthlyPrice: 499,
     qrUrl: ''
   });

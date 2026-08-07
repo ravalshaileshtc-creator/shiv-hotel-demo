@@ -69,7 +69,7 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
   const [tables, setTables] = useState<Table[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [settings, setSettings] = useState<Settings>({
-    restaurantName: 'Lumière Dining',
+    restaurantName: 'Zamvo',
     upiId: 'restaurant@upi',
     address: '',
     logoUrl: '',
@@ -82,8 +82,8 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
   const [tenants, setTenants] = useState<RestaurantTenant[]>([]);
 
   const [saasSettingsForm, setSaasSettingsForm] = useState<SaasSettings>({
-    upiId: 'lumiere@upi',
-    upiName: 'Lumiere Platform',
+    upiId: 'zamvo@upi',
+    upiName: 'Zamvo Platform',
     monthlyPrice: 499,
     qrUrl: ''
   });
