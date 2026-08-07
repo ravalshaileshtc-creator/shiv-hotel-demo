@@ -17,7 +17,8 @@ import {
   Compass,
   CheckCircle,
   Lock,
-  Mic
+  Mic,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -265,6 +266,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   const [tenantName, setTenantName] = useState<string>('Restaurant');
   const [isLoading, setIsLoading] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [lastPlacedOrder, setLastPlacedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     const loadTenant = async () => {
@@ -623,7 +625,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
       setCart([]);
       setRedeemPoints(false);
       setIsCartBottomSheetOpen(false);
-      setActiveTab('status'); // transition to order status tracker!
+      setLastPlacedOrder(newOrder);
 
       confetti({
         particleCount: 150,
@@ -805,6 +807,85 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
             </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (lastPlacedOrder) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-body-md text-slate-800 antialiased overflow-hidden relative w-full">
+        {/* Decorative Background Glows */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center z-0">
+          <div className="w-[800px] h-[800px] bg-primary-500/5 rounded-full blur-[100px] absolute -top-1/4 -right-1/4"></div>
+          <div className="w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[80px] absolute -bottom-10 -left-10"></div>
+        </div>
+
+        {/* Main Content Card */}
+        <main className="bg-white/90 backdrop-blur-xl border border-primary-500/10 shadow-2xl w-full max-w-md rounded-[32px] p-8 relative z-10 flex flex-col items-center text-center animate-[fadeInUp_0.6s_ease-out_forwards]">
+          {/* Animated Tick with shine effect */}
+          <div className="relative w-24 h-24 mb-6 rounded-full bg-primary-500 flex items-center justify-center shadow-lg shadow-primary-500/20 overflow-hidden after:absolute after:inset-0 after:bg-gradient-to-r after:from-white/0 after:via-white/40 after:to-white/0 after:translate-x-[-100%] after:rotate-45 after:animate-[shine_2s_infinite_linear] shrink-0">
+            <CheckCircle className="w-12 h-12 text-white" />
+          </div>
+
+          {/* Success Message */}
+          <h1 className="font-display font-black text-2xl text-primary-500 tracking-tight mb-2">
+            {lang === 'gu' ? 'ઓર્ડર સફળતાપૂર્વક અપાયો!' : 'Order Placed Successfully!'}
+          </h1>
+          <p className="text-xs text-[#546067] mb-6">
+            {lang === 'gu' ? 'તમારો સ્વાદિષ્ટ ઓર્ડર સ્વીકારવામાં આવ્યો છે' : 'Your delicious order has been received by the kitchen.'}
+          </p>
+
+          {/* Order Details */}
+          <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-6 flex flex-col gap-3 relative overflow-hidden text-left">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 via-primary-500 to-amber-400"></div>
+            
+            <div className="flex justify-between items-center border-b border-slate-200/60 pb-2.5">
+              <span className="text-xs text-[#546067]">{lang === 'gu' ? 'ઓર્ડર નંબર' : 'Order Number'}</span>
+              <span className="font-mono text-xs font-bold text-slate-800 tracking-wide">
+                #{lastPlacedOrder.id.split('-').pop()?.toUpperCase() || 'ORD-9902'}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-[#546067]">{lang === 'gu' ? 'અંદાજિત સમય' : 'Estimated Delivery'}</span>
+              <div className="flex items-center gap-1">
+                <Clock className="w-4 h-4 text-amber-500" />
+                <span className="text-xs font-black text-primary-500">15-20 mins</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="w-full flex flex-col gap-3">
+            <button 
+              onClick={() => {
+                setLastPlacedOrder(null);
+                setActiveTab('status');
+              }}
+              className="w-full h-12 bg-primary-500 hover:bg-primary-600 text-white font-bold text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary-500/10 transition-transform active:scale-[0.98]"
+            >
+              <MapPin className="w-4 h-4" />
+              {lang === 'gu' ? 'ઓર્ડર ટ્રૅક કરો' : 'Track Your Order'}
+            </button>
+            
+            <button 
+              onClick={() => {
+                setLastPlacedOrder(null);
+                setActiveTab('menu');
+              }}
+              className="w-full h-12 bg-transparent border border-amber-500/30 text-amber-600 hover:bg-amber-500/5 font-bold text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-[0.98]"
+            >
+              {lang === 'gu' ? 'મેનુ પર પાછા જાઓ' : 'Back to Home'}
+            </button>
+          </div>
+        </main>
+        
+        <style>{`
+          @keyframes shine {
+            0% { transform: translateX(-150%) rotate(45deg); }
+            100% { transform: translateX(250%) rotate(45deg); }
+          }
+        `}</style>
       </div>
     );
   }
