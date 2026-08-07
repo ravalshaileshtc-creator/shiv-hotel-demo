@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, getIsFirebaseMode, getAllRestaurantTenants, updateRestaurantTenant, getActiveRestaurantId, type RestaurantTenant, saveUserDocument, deleteUserDocument, getRestaurantUsers, safeLocalStorage, getSaasSettings, updateSaasSettings, type SaasSettings } from '../services/db';
+import { type MenuItem, type Table, type Order, type Settings, subscribeToState, updateState, getIsFirebaseMode, getAllRestaurantTenants, getRestaurantTenant, updateRestaurantTenant, getActiveRestaurantId, type RestaurantTenant, saveUserDocument, deleteUserDocument, getRestaurantUsers, safeLocalStorage, getSaasSettings, updateSaasSettings, type SaasSettings } from '../services/db';
 import { 
   TrendingUp, 
   ShoppingBag, 
@@ -87,6 +87,20 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
     monthlyPrice: 499,
     qrUrl: ''
   });
+
+  const [ownerTenant, setOwnerTenant] = useState<RestaurantTenant | null>(null);
+
+  useEffect(() => {
+    if (role === 'owner' && activeRestaurantId) {
+      getRestaurantTenant(activeRestaurantId).then(setOwnerTenant).catch(console.error);
+    }
+  }, [role, activeRestaurantId]);
+
+  const getSubscriptionDaysLeft = () => {
+    if (!ownerTenant?.subscriptionExpiresAt) return 0;
+    const diff = ownerTenant.subscriptionExpiresAt - Date.now();
+    return Math.max(0, Math.ceil(diff / (24 * 60 * 60 * 1000)));
+  };
 
   const handleSaveSaasSettings = async () => {
     try {
@@ -533,8 +547,17 @@ export default function AdminDashboard({ role = 'super_admin' }: AdminDashboardP
             <h1 className="text-xl font-bold text-gray-900 leading-tight">
               {role === 'owner' ? `${settings.restaurantName} - Dashboard` : 'Super Admin Settings'}
             </h1>
-            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">
-              {role === 'owner' ? `Resto ID: ${getActiveRestaurantId()} | Billing: ₹499/mo` : 'Global SaaS Platform Administration'}
+            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider flex items-center flex-wrap gap-2">
+              <span>{role === 'owner' ? `Resto ID: ${getActiveRestaurantId()} | Billing: ₹499/mo` : 'Global SaaS Platform Administration'}</span>
+              {role === 'owner' && ownerTenant && (
+                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shrink-0 ${
+                  getSubscriptionDaysLeft() <= 7 
+                    ? 'bg-red-50 text-red-600 border-red-200 animate-pulse' 
+                    : 'bg-emerald-50 text-emerald-600 border-emerald-150'
+                }`}>
+                  {getSubscriptionDaysLeft()} Days Left
+                </span>
+              )}
             </p>
           </div>
         </div>
