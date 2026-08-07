@@ -9,6 +9,9 @@
     "start": "tsx server.ts"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
     "@google/generative-ai": "^0.24.1",
     "canvas-confetti": "^1.9.4",
     "cors": "^2.8.6",
