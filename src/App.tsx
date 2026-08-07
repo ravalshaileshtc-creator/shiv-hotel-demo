@@ -64,7 +64,7 @@ export default function App() {
     if (settings?.restaurantName) {
       document.title = `${settings.restaurantName} | POS Hub`;
     } else {
-      document.title = 'Shiv POS & QR Dining';
+      document.title = 'Smart POS & QR Dining';
     }
   }, [settings]);
 
@@ -84,8 +84,8 @@ export default function App() {
   const [isRegistering, setIsRegistering] = useState(false);
   const paymentCanvasRef = useRef<HTMLCanvasElement>(null);
   const [saasSettings, setSaasSettings] = useState<any>({
-    upiId: 'zamvo@upi',
-    upiName: 'Zamvo Platform',
+    upiId: 'platform@upi',
+    upiName: 'Platform Subscription',
     monthlyPrice: 499,
     qrUrl: ''
   });
@@ -300,7 +300,7 @@ export default function App() {
   // 1. Customer view routing: query parameters present (Bypasses Login!)
   if (route.restaurantId && route.tableId) {
     if (showSplash) {
-      return <Splash onComplete={() => setShowSplash(false)} />;
+      return <Splash restaurantId={route.restaurantId} onComplete={() => setShowSplash(false)} />;
     }
     return <CustomerDashboard restaurantId={route.restaurantId} tableId={route.tableId} />;
   }
@@ -320,10 +320,10 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-2xl font-black text-white tracking-tight leading-none font-display mt-2">
-                Shiv POS & QR Dining
+                Smart POS & QR Dining
               </h1>
               <p className="text-[10px] text-primary-500 font-extrabold uppercase tracking-widest mt-2">
-                SaaS Management Login
+                Management Login
               </p>
             </div>
           </div>

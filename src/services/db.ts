@@ -287,6 +287,27 @@ export const getRestaurantTenant = async (restaurantId: string): Promise<Restaur
   };
 };
 
+export const getRestaurantSettings = async (restaurantId: string): Promise<Settings | null> => {
+  if (isFirebaseMode && firestoreDb) {
+    try {
+      const snap = await getDoc(doc(firestoreDb, 'restaurants', restaurantId, 'settings', 'main'));
+      if (snap.exists()) {
+        return snap.data() as Settings;
+      }
+    } catch (e) {
+      console.error('Failed to fetch settings:', e);
+    }
+  }
+  return {
+    restaurantName: restaurantId === 'lumiere-dining' ? 'Zamvo' : 'Demo Restaurant',
+    upiId: 'zamvo@upi',
+    address: 'Demo Address',
+    logoUrl: '',
+    taxPercentage: 5,
+    currencySymbol: '₹'
+  };
+};
+
 export const getAllRestaurantTenants = async (): Promise<RestaurantTenant[]> => {
   if (isFirebaseMode && firestoreDb) {
     try {

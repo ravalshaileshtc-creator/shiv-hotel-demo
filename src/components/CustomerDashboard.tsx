@@ -251,8 +251,8 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
   const [tables, setTables] = useState<Table[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [settings, setSettings] = useState<Settings>({
-    restaurantName: 'Zamvo',
-    upiId: 'zamvo@upi',
+    restaurantName: 'Restaurant',
+    upiId: 'payment@upi',
     address: '',
     logoUrl: '',
     taxPercentage: 10,
@@ -262,7 +262,7 @@ export default function CustomerDashboard({ restaurantId, tableId }: CustomerDas
 
   // Tenant subscription checking states
   const [tenantStatus, setTenantStatus] = useState<'ACTIVE' | 'PENDING' | 'SUSPENDED' | null>(null);
-  const [tenantName, setTenantName] = useState<string>('Zamvo');
+  const [tenantName, setTenantName] = useState<string>('Restaurant');
   const [isLoading, setIsLoading] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
